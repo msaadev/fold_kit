@@ -56,7 +56,8 @@ public class FoldKitPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
         case .fullyOpen: self.status = "fullyOpen"
         default: self.status = "unknown"
         }
-        self.angle = update.hinge.map { Double($0.angle) }
+        // UIHinge.angle is in radians; Dart expects degrees. Fully open is pinned to 180 like Triangle Calculator.
+        self.angle = update.hinge.map { $0.status == .fullyOpen ? 180 : Double($0.angle) * 180 / .pi }
         self.send()
       }
       root.addInteraction(interaction)
