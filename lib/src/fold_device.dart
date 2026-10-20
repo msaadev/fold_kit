@@ -123,6 +123,13 @@ class FoldDevice {
     );
   }
 
+  /// Devices are equal when their [id] is equal, so a refreshed catalog keeps selections.
+  @override
+  bool operator ==(Object other) => other is FoldDevice && other.id == id;
+
+  @override
+  int get hashCode => id.hashCode;
+
   @override
   String toString() => 'FoldDevice($id)';
 }
