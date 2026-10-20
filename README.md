@@ -9,6 +9,21 @@ that never put a button on the hinge.
 
 **Docs and device list:** [monsware.com/foldkit](https://monsware.com/foldkit/)
 
+## One API for every device and platform
+
+Write your layout once. `fold_kit` answers the same questions everywhere, so the same code runs on
+a phone, a foldable, a tablet, the web and desktop:
+
+| Device | Fold position & posture | Window size class |
+|---|---|---|
+| Samsung Galaxy Z Fold / Flip, Pixel Fold, other Android foldables | ✅ | ✅ |
+| iPhone Duo (iOS 27.1) | 🔜 0.1 | ✅ |
+| iPad, Android tablets | — (no fold, reported as `none`) | ✅ |
+| Phones, web, macOS, Windows, Linux | — (no fold, reported as `none`) | ✅ |
+
+Other packages cover one device (for example only iPhone Duo). `fold_kit` is cross-platform by design:
+one `FoldInfo`, one set of widgets, every platform.
+
 ## What works today (0.0.x)
 
 ```dart
@@ -26,7 +41,7 @@ fold.windowSizeClass;  // compact (< 600), medium (< 840), expanded
 Fold data comes from Flutter's `MediaQuery.displayFeatures`, which Flutter fills on Android
 foldables today.
 
-## Coming in 0.1
+## Coming in 0.1: less code for adaptive layouts
 
 - **iPhone Duo**: the fold and posture on iOS 27.1 (Flutter does not report them on iOS yet).
 - **`FoldScaffold`**: app bar and tabs move into a vertical bar on the right, like system apps on iPhone Duo.
