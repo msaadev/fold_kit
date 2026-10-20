@@ -1,59 +1,47 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
-
-import 'package:flutter/services.dart';
 import 'package:fold_kit/fold_kit.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+void main() => runApp(const ExampleApp());
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
-  final _foldKitPlugin = FoldKit();
-
-  @override
-  void initState() {
-    super.initState();
-    initPlatformState();
-  }
-
-  // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-    String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    // We also handle the message potentially returning null.
-    try {
-      platformVersion =
-          await _foldKitPlugin.getPlatformVersion() ?? 'Unknown platform version';
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
-    }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    setState(() {
-      _platformVersion = platformVersion;
-    });
-  }
+class ExampleApp extends StatelessWidget {
+  const ExampleApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(title: const Text('Plugin example app')),
-        body: Center(child: Text('Running on: $_platformVersion\n')),
+      title: 'fold_kit',
+      theme: ThemeData(colorSchemeSeed: const Color(0xFF3F51B5)),
+      home: const FoldPage(),
+    );
+  }
+}
+
+class FoldPage extends StatelessWidget {
+  const FoldPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final fold = FoldInfo.of(context);
+    return Scaffold(
+      appBar: AppBar(title: const Text('fold_kit')),
+      body: ListView(
+        padding: const EdgeInsets.all(24),
+        children: [
+          _buildRow(
+            'Window',
+            '${fold.windowSize.width.round()} × '
+                '${fold.windowSize.height.round()}',
+          ),
+          _buildRow('Size class', fold.windowSizeClass.name),
+          _buildRow('Posture', fold.posture.name),
+          _buildRow('Fold axis', fold.axis?.name ?? '—'),
+          _buildRow('Fold rect', fold.rect?.toString() ?? '—'),
+        ],
       ),
     );
+  }
+
+  Widget _buildRow(String label, String value) {
+    return ListTile(title: Text(label), trailing: Text(value));
   }
 }

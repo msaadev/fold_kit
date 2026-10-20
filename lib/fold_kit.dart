@@ -1,8 +1,5 @@
+/// Foldable and large-screen toolkit for Flutter: fold position, posture
+/// and window size classes for iPhone Duo, Galaxy Z Fold, Pixel Fold and tablets.
+library;
 
-import 'fold_kit_platform_interface.dart';
-
-class FoldKit {
-  Future<String?> getPlatformVersion() {
-    return FoldKitPlatform.instance.getPlatformVersion();
-  }
-}
+export 'src/fold_info.dart';
