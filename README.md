@@ -1,3 +1,5 @@
+<p align="center"><img src="https://raw.githubusercontent.com/msaadev/fold_kit/main/logo/logo.png" width="128" alt="fold_kit logo"></p>
+
 # fold_kit
 
 [![pub package](https://img.shields.io/pub/v/fold_kit.svg)](https://pub.dev/packages/fold_kit)

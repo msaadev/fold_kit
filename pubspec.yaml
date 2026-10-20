@@ -1,6 +1,6 @@
 name: fold_kit
 description: "Foldable and large-screen toolkit for Flutter: fold position, posture, hinge angle and iPhone Duo-style vertical bars."
-version: 0.0.1
+version: 0.0.2
 homepage: https://monsware.com/foldkit/
 repository: https://github.com/msaadev/fold_kit
 issue_tracker: https://github.com/msaadev/fold_kit/issues

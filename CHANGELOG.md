@@ -1,3 +1,7 @@
+## 0.0.2
+
+* New logo.
+
 ## 0.0.1
 
 * `FoldInfo.of(context)`: fold rect, axis, posture (none / closed / halfOpen / flat) and window size class.
