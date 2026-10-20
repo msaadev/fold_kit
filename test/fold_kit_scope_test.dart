@@ -109,4 +109,25 @@ void main() {
     );
     expect(info.posture, FoldPosture.none);
   }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
+  testWidgets('follows rotation and window resizing', (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    late Size size;
+    await tester.pumpWidget(
+      FoldKitScope(
+        child: Builder(
+          builder: (context) {
+            size = MediaQuery.sizeOf(context);
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+    expect(size, const Size(400, 800));
+    tester.view.physicalSize = const Size(800, 400);
+    await tester.pump();
+    expect(size, const Size(800, 400));
+  });
 }

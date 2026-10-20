@@ -16,6 +16,9 @@ First stable release: one foldable and large-screen API for every device.
 * **Easy migration**: `FoldScaffold` keeps your own `appBar` and `bottomNavigationBar` on phones,
   adds no app bar when you have none, takes `Widget` icons (badges work) and reuses your
   `BottomNavigationBarItem`s via `FoldDestination.fromItem`; `FoldBarTheme` matches your colors.
+* `FoldKitScope` follows rotation and window resizing (MediaQuery used to keep the first size on
+  Android, web and desktop).
+* `fold_kit:audit` flags `UIRequiresFullScreen` only when it is `true`.
 * iOS hinge angle is reported in degrees (UIKit gives radians); fully open is 180.
 * Everything from 0.1.0 below.
 

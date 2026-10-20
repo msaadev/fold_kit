@@ -89,8 +89,11 @@ List<AuditFinding> auditProject(Directory root) {
   }
 
   final plist = File('${root.path}/ios/Runner/Info.plist');
+  // Only a true value letterboxes; `<false/>` is fine.
   if (plist.existsSync() &&
-      plist.readAsStringSync().contains('UIRequiresFullScreen')) {
+      RegExp(
+        r'<key>UIRequiresFullScreen</key>\s*<true\s*/>',
+      ).hasMatch(plist.readAsStringSync())) {
     findings.add(
       AuditFinding(
         rel(plist),

@@ -32,4 +32,11 @@ if (isTablet) {}
       'ios/Runner/Info.plist:0',
     ]);
   });
+
+  test('UIRequiresFullScreen set to false is fine', () {
+    File(
+      '${root.path}/ios/Runner/Info.plist',
+    ).writeAsStringSync('<key>UIRequiresFullScreen</key>\n\t<false/>');
+    expect(auditProject(root).where((f) => f.path.endsWith('.plist')), isEmpty);
+  });
 }

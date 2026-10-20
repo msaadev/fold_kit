@@ -90,25 +90,32 @@ class _FoldKitScopeState extends State<FoldKitScope> {
 
   @override
   Widget build(BuildContext context) {
-    final view = View.of(context);
-    final base = MediaQueryData.fromView(view);
-    final features = base.displayFeatures.isNotEmpty || _folds.isEmpty
-        ? base.displayFeatures
-        : [
-            for (final rect in _folds)
-              DisplayFeature(
-                bounds: rect,
-                type: DisplayFeatureType.fold,
-                state: DisplayFeatureState.postureHalfOpened,
-              ),
-          ];
-    return FoldScopeData(
-      status: _status,
-      angle: _angle,
-      model: _model,
-      child: MediaQuery(
-        data: base.copyWith(displayFeatures: features),
-        child: FoldStatePublisher(child: widget.child),
+    // fromView follows rotation and resizing; the fold is added on top of it.
+    return MediaQuery.fromView(
+      view: View.of(context),
+      child: Builder(
+        builder: (context) {
+          final base = MediaQuery.of(context);
+          final features = base.displayFeatures.isNotEmpty || _folds.isEmpty
+              ? base.displayFeatures
+              : [
+                  for (final rect in _folds)
+                    DisplayFeature(
+                      bounds: rect,
+                      type: DisplayFeatureType.fold,
+                      state: DisplayFeatureState.postureHalfOpened,
+                    ),
+                ];
+          return FoldScopeData(
+            status: _status,
+            angle: _angle,
+            model: _model,
+            child: MediaQuery(
+              data: base.copyWith(displayFeatures: features),
+              child: FoldStatePublisher(child: widget.child),
+            ),
+          );
+        },
       ),
     );
   }
