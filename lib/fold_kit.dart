@@ -4,6 +4,8 @@ library;
 
 export 'src/fold_info.dart';
 export 'src/fold_avoid.dart';
-export 'src/fold_kit_scope.dart';
+export 'src/fold_device.dart';
+export 'src/fold_kit_scope.dart' hide FoldScopeData;
+export 'src/fold_preview.dart';
 export 'src/fold_scaffold.dart';
 export 'src/fold_two_pane.dart';

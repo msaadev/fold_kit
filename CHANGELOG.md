@@ -1,4 +1,18 @@
-## 0.1.0
+## 1.0.0
+
+First stable release: one foldable and large-screen API for every device.
+
+* **`FoldPreview`**: run any screen as iPhone Duo, Galaxy Z Fold or iPad (closed, half open,
+  flat, portrait) on any screen or in widget tests, with the fold painted on top and an optional
+  toolbar. Build foldable layouts without a foldable.
+* **Device catalog** (`FoldDevices`): measured sizes and folds of current foldables and tablets;
+  `FoldDevices.refresh()` (opt-in) pulls the latest list from monsware.com/foldkit/models.
+* **`dart run fold_kit:audit`**: lists code and settings that break on foldables, tablets and
+  Split View (screen-size math, orientation locks, `inactive` pauses, `UIRequiresFullScreen`,
+  `screenOrientation`…). `--fatal` for CI.
+* Everything from 0.1.0 below.
+
+## 0.1.0 (not published, part of 1.0.0)
 
 * **iPhone Duo**: `FoldKitScope` reads the fold (reserved division region) and the hinge status on
   iOS 27.1 and puts the fold into `MediaQuery.displayFeatures`, like Flutter does on Android.

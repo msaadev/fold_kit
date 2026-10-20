@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fold_kit/fold_kit.dart';
 
+// flutter run --dart-define=FOLD_PREVIEW=true  → try every foldable on any screen.
+const _preview = bool.fromEnvironment('FOLD_PREVIEW');
+
 void main() => runApp(const FoldKitScope(child: ExampleApp()));
 
 class ExampleApp extends StatelessWidget {
@@ -14,7 +17,9 @@ class ExampleApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(colorSchemeSeed: seed),
       darkTheme: ThemeData(colorSchemeSeed: seed, brightness: Brightness.dark),
-      home: const HomePage(),
+      home: _preview
+          ? const FoldPreview(controls: true, child: HomePage())
+          : const HomePage(),
     );
   }
 }

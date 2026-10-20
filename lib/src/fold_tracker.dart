@@ -32,7 +32,29 @@ class _FoldTrackerState extends State<FoldTracker> {
     if (!mounted) return;
     final box = context.findRenderObject();
     if (box is! RenderBox || !box.hasSize) return;
-    final origin = box.localToGlobal(Offset.zero);
+    final anchor = context
+        .getInheritedWidgetOfExactType<FoldWindowAnchor>()
+        ?.windowKey
+        .currentContext
+        ?.findRenderObject();
+    final origin = box.localToGlobal(Offset.zero, ancestor: anchor);
     if (origin != _origin) setState(() => _origin = origin);
   }
+}
+
+/// Marks the box that plays the role of the window (used by `FoldPreview`),
+/// so fold rects are mapped in its coordinates instead of the screen's.
+class FoldWindowAnchor extends InheritedWidget {
+  /// Key of the window box.
+  final GlobalKey windowKey;
+
+  /// Creates the anchor.
+  const FoldWindowAnchor({
+    super.key,
+    required this.windowKey,
+    required super.child,
+  });
+
+  @override
+  bool updateShouldNotify(FoldWindowAnchor old) => old.windowKey != windowKey;
 }

@@ -43,13 +43,13 @@ class FoldKitScope extends StatefulWidget {
 
   /// The latest hinge status, or [HingeStatus.unknown] without a scope.
   static HingeStatus statusOf(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<_FoldScopeData>()?.status ??
+      context.dependOnInheritedWidgetOfExactType<FoldScopeData>()?.status ??
       HingeStatus.unknown;
 
   /// The latest hinge angle in degrees (iPhone Duo, Android foldables with a
   /// hinge sensor), `null` when not reported. Use it for interaction, not layout.
   static double? angleOf(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<_FoldScopeData>()?.angle;
+      context.dependOnInheritedWidgetOfExactType<FoldScopeData>()?.angle;
 
   @override
   State<FoldKitScope> createState() => _FoldKitScopeState();
@@ -64,7 +64,8 @@ class _FoldKitScopeState extends State<FoldKitScope> {
   @override
   void initState() {
     super.initState();
-    final native = defaultTargetPlatform == TargetPlatform.iOS ||
+    final native =
+        defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.android;
     if (!native || kIsWeb) return;
     _subscription = FoldKitScope.channel.receiveBroadcastStream().listen(
@@ -93,7 +94,7 @@ class _FoldKitScopeState extends State<FoldKitScope> {
                 state: DisplayFeatureState.postureHalfOpened,
               ),
           ];
-    return _FoldScopeData(
+    return FoldScopeData(
       status: _status,
       angle: _angle,
       child: MediaQuery(
@@ -128,17 +129,23 @@ class _FoldKitScopeState extends State<FoldKitScope> {
   }
 }
 
-class _FoldScopeData extends InheritedWidget {
+/// Hinge data for the subtree; used by `FoldKitScope` and `FoldPreview`.
+class FoldScopeData extends InheritedWidget {
+  /// Hinge status.
   final HingeStatus status;
+
+  /// Hinge angle in degrees.
   final double? angle;
 
-  const _FoldScopeData({
+  /// Creates the data.
+  const FoldScopeData({
+    super.key,
     required this.status,
     required this.angle,
     required super.child,
   });
 
   @override
-  bool updateShouldNotify(_FoldScopeData old) =>
+  bool updateShouldNotify(FoldScopeData old) =>
       old.status != status || old.angle != angle;
 }

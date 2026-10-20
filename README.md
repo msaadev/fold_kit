@@ -25,7 +25,10 @@ do the adaptive work for you:
 
 Other packages cover one device (for example only iPhone Duo). `fold_kit` is cross-platform by design.
 
-<p align="center"><img src="https://raw.githubusercontent.com/msaadev/fold_kit/main/screen_shots/duo_closed.png" width="280" alt="fold_kit on iPhone Duo outer display: FoldScaffold vertical bar"></p>
+<p align="center">
+<img src="https://raw.githubusercontent.com/msaadev/fold_kit/main/screen_shots/preview_duo_half_open.png" width="520" alt="Flutter FoldTwoPane split at the iPhone Duo fold">
+<img src="https://raw.githubusercontent.com/msaadev/fold_kit/main/screen_shots/duo_closed.png" width="190" alt="fold_kit on iPhone Duo outer display: vertical bar like iOS">
+</p>
 
 ## Setup
 
@@ -78,14 +81,56 @@ FoldAvoid(child: FloatingActionButton(onPressed: go)); // never on the hinge
 FoldKitScope.angleOf(context);                          // hinge angle in degrees
 ```
 
-## Coming next
+## FoldPreview: build for foldables without a foldable
 
-A live device catalog of current foldables, test helpers for every posture, a debug overlay
-with a fake fold, and a guide for moving from `dual_screen`.
+```dart
+// Any device, any posture, on your laptop, in tests and in screenshots:
+FoldPreview(controls: true, child: MyHomePage())
+
+// In a widget test:
+await tester.pumpWidget(MaterialApp(
+  home: FoldPreview(
+    device: FoldDevices.byId('iphone-duo'),
+    posture: FoldPosture.halfOpen,
+    child: const MyHomePage(),
+  ),
+));
+```
+
+The window size, the fold, the hinge status and the safe area are faked, so `FoldInfo`,
+`FoldScaffold` and `FoldTwoPane` behave exactly like on the device.
+
+## Device catalog
+
+```dart
+FoldDevices.all;                    // iPhone Duo, Galaxy Z Fold7, iPads, a reference phone
+FoldDevices.byId('galaxy-z-fold7');
+await FoldDevices.refresh();        // opt-in: latest list from monsware.com/foldkit/models
+```
+
+`refresh()` is a plain GET with no data sent, but like any request it reveals the device's IP
+address to monsware.com — mention it in your privacy policy if you turn it on. Layout never
+depends on the catalog: the fold always comes from the OS.
+
+## Audit your app
+
+```bash
+dart run fold_kit:audit          # lists file:line + what to change
+dart run fold_kit:audit --fatal  # non-zero exit for CI
+```
+
+## Moving from dual_screen
+
+| dual_screen | fold_kit |
+|---|---|
+| `TwoPane(startPane:, endPane:, paneProportion:)` | `FoldTwoPane(start:, end:, ratio:)` |
+| `DualScreenInfo.hingeAngleEvents` | `FoldKitScope.angleOf(context)` |
+| `DualScreenInfo.hasHingeAngleSensor` | `FoldKitScope.angleOf(context) != null` |
+| Surface Duo only | Android foldables, iPhone Duo, tablets, phones, web, desktop |
 
 ## Keywords
 
-Flutter foldable · iPhone Duo · Galaxy Z Fold · Pixel Fold · hinge · dual screen · two pane ·
+Flutter foldable · iPhone Duo · Galaxy Z Fold · Pixel Fold · hinge angle · dual screen · two pane · dual_screen alternative ·
 adaptive layout · responsive layout · window size class · tablet · iPad.
 
 Issues and ideas: [GitHub](https://github.com/msaadev/fold_kit/issues).
