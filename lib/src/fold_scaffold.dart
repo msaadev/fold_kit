@@ -165,6 +165,9 @@ class FoldScaffold extends StatefulWidget {
   /// Passed to the inner [Scaffold].
   final bool? resizeToAvoidBottomInset;
 
+  /// Passed to the inner [Scaffold].
+  final Widget? drawer, endDrawer;
+
   /// Creates the scaffold.
   const FoldScaffold({
     super.key,
@@ -183,6 +186,8 @@ class FoldScaffold extends StatefulWidget {
     this.barTheme,
     this.backgroundColor,
     this.resizeToAvoidBottomInset,
+    this.drawer,
+    this.endDrawer,
   });
 
   /// Whether the bars are vertical for this window.
@@ -226,6 +231,8 @@ class _FoldScaffoldState extends State<FoldScaffold> {
     return Scaffold(
       backgroundColor: widget.backgroundColor,
       resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
+      drawer: widget.drawer,
+      endDrawer: widget.endDrawer,
       appBar: widget.appBar ?? _buildAppBar(),
       body: body,
       floatingActionButton: widget.floatingActionButton,
@@ -271,9 +278,12 @@ class _FoldScaffoldState extends State<FoldScaffold> {
 
   Widget _buildVertical(BuildContext context, Widget body) {
     final textTheme = Theme.of(context).textTheme;
+    final title = widget.title ?? _ownAppBar?.title;
     return Scaffold(
       backgroundColor: widget.backgroundColor,
       resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
+      drawer: widget.drawer,
+      endDrawer: widget.endDrawer,
       floatingActionButton: widget.floatingActionButton,
       body: Row(
         children: [
@@ -283,12 +293,12 @@ class _FoldScaffoldState extends State<FoldScaffold> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (widget.title != null)
+                  if (title != null)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                       child: DefaultTextStyle(
                         style: textTheme.titleLarge!,
-                        child: widget.title!,
+                        child: title,
                       ),
                     ),
                   Expanded(child: body),
@@ -311,9 +321,21 @@ class _FoldScaffoldState extends State<FoldScaffold> {
         child: SizedBox(
           width: _barWidth,
           child: LayoutBuilder(
-            builder: (context, constraints) => Column(
-              children: _buildBarItems(context, constraints.maxHeight),
-            ),
+            builder: (context, constraints) {
+              final items = _buildBarItems(context, constraints.maxHeight);
+              // Every item but the Spacer is _itemExtent tall.
+              if ((items.length - 1) * _itemExtent <= constraints.maxHeight) {
+                return Column(children: items);
+              }
+              return SingleChildScrollView(
+                child: Column(
+                  children: [
+                    for (final w in items)
+                      if (w is! Spacer) w,
+                  ],
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -323,8 +345,15 @@ class _FoldScaffoldState extends State<FoldScaffold> {
   List<Widget> _buildBarItems(BuildContext context, double height) {
     final leading =
         widget.leading ??
+        _ownAppBar?.leading ??
         (ModalRoute.of(context)?.canPop ?? false ? const BackButton() : null);
-    final capacity = (height / _itemExtent).floor() - (leading == null ? 0 : 1);
+    final ownActions = widget.actions.isEmpty
+        ? _ownAppBar?.actions ?? const <Widget>[]
+        : const <Widget>[];
+    final capacity =
+        (height / _itemExtent).floor() -
+        (leading == null ? 0 : 1) -
+        ownActions.length;
     final shownActions = [..._orderedActions];
     final shownTabs = [for (var i = 0; i < widget.destinations.length; i++) i];
     final hiddenActions = <FoldAction>[];
@@ -363,6 +392,11 @@ class _FoldScaffoldState extends State<FoldScaffold> {
           onPressed: action.onPressed,
           prominent: action.prominent,
           theme: widget.barTheme,
+        ),
+      for (final w in ownActions)
+        SizedBox(
+          height: _itemExtent,
+          child: Center(child: w),
         ),
       if (needsMenu) _buildOverflow(hiddenActions, hiddenTabs),
       const Spacer(),
@@ -406,6 +440,11 @@ class _FoldScaffoldState extends State<FoldScaffold> {
       ),
     );
   }
+
+  AppBar? get _ownAppBar => switch (widget.appBar) {
+    final AppBar bar => bar,
+    _ => null,
+  };
 
   List<FoldAction> get _orderedActions => [
     ...widget.actions.where((a) => a.prominent),
@@ -454,6 +493,8 @@ class _BarButton extends StatelessWidget {
         button: true,
         selected: selected,
         label: label,
+        enabled: onPressed != null,
+        onTap: onPressed,
         excludeSemantics: true,
         child: Tooltip(
           message: label,
