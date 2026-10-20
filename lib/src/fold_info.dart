@@ -2,13 +2,15 @@ import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 
 import 'package:flutter/widgets.dart';
 
+import 'fold_kit_scope.dart';
+
 /// How a foldable is folded.
 enum FoldPosture {
   /// No fold in view: a normal phone, a tablet, or a foldable lying flat
   /// that does not report its fold.
   none,
 
-  /// Folded shut, app on the outer display (iPhone Duo, from 0.1).
+  /// Folded shut, app on the outer display (iPhone Duo, needs `FoldKitScope`).
   closed,
 
   /// Partly open, like a book or a laptop ("tabletop").
@@ -71,9 +73,25 @@ class FoldInfo {
 
   /// Fold information for the window [context] is in. Rebuilds the caller
   /// when the window size or the fold changes.
-  static FoldInfo of(BuildContext context) => FoldInfo.fromFeatures(
-    MediaQuery.sizeOf(context),
-    MediaQuery.displayFeaturesOf(context),
+  static FoldInfo of(BuildContext context) {
+    final info = FoldInfo.fromFeatures(
+      MediaQuery.sizeOf(context),
+      MediaQuery.displayFeaturesOf(context),
+    );
+    return switch (FoldKitScope.statusOf(context)) {
+      HingeStatus.closed => info._withPosture(FoldPosture.closed),
+      HingeStatus.fullyOpen when !info.hasFold => info._withPosture(
+        FoldPosture.flat,
+      ),
+      _ => info,
+    };
+  }
+
+  FoldInfo _withPosture(FoldPosture posture) => FoldInfo(
+    windowSize: windowSize,
+    rect: rect,
+    axis: axis,
+    posture: posture,
   );
 
   /// Fold information from a window [size] and its display [features].

@@ -3,3 +3,4 @@
 library;
 
 export 'src/fold_info.dart';
+export 'src/fold_kit_scope.dart';
