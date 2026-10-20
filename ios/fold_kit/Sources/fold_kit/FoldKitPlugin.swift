@@ -71,6 +71,7 @@ public class FoldKitPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
       "status": status,
       "angle": angle as Any,
       "folds": Self.folds(in: view),
+      "model": Self.model,
     ])
   }
 
@@ -84,6 +85,18 @@ public class FoldKitPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
 #endif
     return []
   }
+
+  // e.g. "iPhone19,4"; the simulator reports the device it simulates.
+  private static let model: String = {
+    if let simulated = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] {
+      return simulated
+    }
+    var info = utsname()
+    uname(&info)
+    return withUnsafeBytes(of: &info.machine) { bytes in
+      String(decoding: bytes.prefix { $0 != 0 }, as: UTF8.self)
+    }
+  }()
 
   private static func flutterView() -> UIView? {
     let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }

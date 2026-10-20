@@ -39,18 +39,55 @@ void main() => runApp(const FoldKitScope(child: MyApp()));
 `FoldKitScope` adds the iPhone Duo fold and the hinge angle; on other platforms it passes through.
 Build your iOS app with Xcode 27.1 to get the iPhone Duo data.
 
+## Your page when folded, your fold layout when open
+
+```dart
+FoldBuilder(
+  builder: (context, fold) => fold.isOpen ? const BookingWide() : const BookingPage(),
+)
+
+FoldListener(
+  onChanged: (fold) => analytics.log('fold', {
+    'posture': fold.posture.name,     // closed · halfOpen · flat · none
+    'angle': fold.angle,              // degrees, null without a hinge sensor
+    'device': fold.device?.name,      // "iPhone Duo", "Galaxy Z Fold7"…
+    'model': fold.model,              // "iPhone19,4", "SM-F966B"…
+  }),
+  child: app,
+)
+
+FoldKit.changes.listen((fold) { ... }); // outside widgets
+```
+
+## Migrating an existing app (about an hour for the shell)
+
+1. `fold_kit` in `pubspec.yaml`, wrap the app: `FoldKitScope(child: MyApp())`.
+2. In the screen that owns your tabs, rename `Scaffold` to `FoldScaffold`. Keep your `appBar` and
+   `bottomNavigationBar` — phones look exactly the same. Add:
+
+```dart
+destinations: [for (final item in navItems) FoldDestination.fromItem(item)],
+selectedIndex: index,
+onDestinationSelected: onTabTap,
+barTheme: const FoldBarTheme(selectedColor: brandYellow, backgroundColor: Colors.white),
+```
+
+3. `dart run fold_kit:audit` and fix what it lists (mostly `MediaQuery.of(context).size` →
+   `MediaQuery.sizeOf(context)`).
+4. Where a wide layout helps, `FoldBuilder` or `FoldTwoPane`. Everything else keeps working.
+
 ## FoldScaffold: iPhone Duo-style bars in one line
 
 ```dart
 FoldScaffold(
   title: const Text('Rides'),
   actions: [
-    FoldAction(icon: Icons.add, label: 'New', prominent: true, onPressed: create),
-    FoldAction(icon: Icons.search, label: 'Search', onPressed: search),
+    FoldAction(icon: Icon(Icons.add), label: 'New', prominent: true, onPressed: create),
+    FoldAction(icon: Icon(Icons.search), label: 'Search', onPressed: search),
   ],
   destinations: const [
-    FoldDestination(icon: Icons.list_alt, label: 'Rides'),
-    FoldDestination(icon: Icons.person, label: 'Profile'),
+    FoldDestination(icon: Icon(Icons.list_alt), label: 'Rides'),
+    FoldDestination(icon: Icon(Icons.person), label: 'Profile'),
   ],
   selectedIndex: tab,
   onDestinationSelected: (i) => setState(() => tab = i),

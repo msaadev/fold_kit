@@ -49,6 +49,10 @@ class FoldDevice {
   /// The fold on [inner] while half open, or `null` for devices without one.
   final Rect? fold;
 
+  /// Model identifiers that belong to this device (prefix match), e.g.
+  /// `iPhone19,4` or `SM-F966`.
+  final List<String> modelIds;
+
   /// Safe area of the outer display (iPhone Duo: the status strip on the right).
   final EdgeInsets outerPadding;
 
@@ -66,6 +70,7 @@ class FoldDevice {
     this.outer,
     this.fold,
     this.outerPadding = EdgeInsets.zero,
+    this.modelIds = const [],
     this.verified = 'spec',
   });
 
@@ -102,6 +107,7 @@ class FoldDevice {
       outer: json['outer'] == null ? null : size(json['outer']),
       fold: fold,
       outerPadding: _insets(json['outerPadding']),
+      modelIds: [for (final m in json['modelIds'] as List? ?? const []) '$m'],
       verified: json['verified'] as String? ?? 'spec',
     );
   }
@@ -139,6 +145,15 @@ abstract final class FoldDevices {
   static FoldDevice? byId(String id) {
     for (final d in _all) {
       if (d.id == id) return d;
+    }
+    return null;
+  }
+
+  /// The device whose model id matches [model] (`iPhone19,4`, `SM-F966B`…), or `null`.
+  static FoldDevice? byModel(String? model) {
+    if (model == null || model.isEmpty) return null;
+    for (final d in _all) {
+      if (d.modelIds.any(model.startsWith)) return d;
     }
     return null;
   }
@@ -182,6 +197,7 @@ abstract final class FoldDevices {
       outer: Size(466, 678),
       fold: Rect.fromLTWH(455.5, 0, 40, 669),
       outerPadding: EdgeInsets.only(right: 84),
+      modelIds: ['iPhone19,4'],
       verified: 'simulator',
     ),
     FoldDevice(
@@ -193,6 +209,7 @@ abstract final class FoldDevices {
       inner: Size(832, 750),
       outer: Size(411, 960),
       fold: Rect.fromLTWH(416, 0, 0, 750),
+      modelIds: ['SM-F966'],
     ),
     FoldDevice(
       id: 'ipad-mini',

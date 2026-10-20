@@ -10,6 +10,12 @@ First stable release: one foldable and large-screen API for every device.
 * **`dart run fold_kit:audit`**: lists code and settings that break on foldables, tablets and
   Split View (screen-size math, orientation locks, `inactive` pauses, `UIRequiresFullScreen`,
   `screenOrientation`…). `--fatal` for CI.
+* **`FoldBuilder`, `FoldListener`, `FoldKit.changes`**: one `FoldState` with posture, hinge angle,
+  device (model id + catalog name) and `isOpen` / `isClosed` / `isFoldable` — render your own
+  foldable layout when it is open, your normal page otherwise.
+* **Easy migration**: `FoldScaffold` keeps your own `appBar` and `bottomNavigationBar` on phones,
+  adds no app bar when you have none, takes `Widget` icons (badges work) and reuses your
+  `BottomNavigationBarItem`s via `FoldDestination.fromItem`; `FoldBarTheme` matches your colors.
 * Everything from 0.1.0 below.
 
 ## 0.1.0 (not published, part of 1.0.0)

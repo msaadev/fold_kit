@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'fold_state.dart';
+
 /// Hinge status reported by the platform (iPhone Duo; Android reports only the angle).
 enum HingeStatus {
   /// Not reported (no hinge, or an older OS).
@@ -46,6 +48,11 @@ class FoldKitScope extends StatefulWidget {
       context.dependOnInheritedWidgetOfExactType<FoldScopeData>()?.status ??
       HingeStatus.unknown;
 
+  /// The device model id (`iPhone19,4`, `SM-F966B`…), `null` before the
+  /// platform reports it or outside iOS / Android.
+  static String? modelOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<FoldScopeData>()?.model;
+
   /// The latest hinge angle in degrees (iPhone Duo, Android foldables with a
   /// hinge sensor), `null` when not reported. Use it for interaction, not layout.
   static double? angleOf(BuildContext context) =>
@@ -59,6 +66,7 @@ class _FoldKitScopeState extends State<FoldKitScope> {
   StreamSubscription<dynamic>? _subscription;
   HingeStatus _status = HingeStatus.unknown;
   double? _angle;
+  String? _model;
   List<Rect> _folds = const [];
 
   @override
@@ -97,9 +105,10 @@ class _FoldKitScopeState extends State<FoldKitScope> {
     return FoldScopeData(
       status: _status,
       angle: _angle,
+      model: _model,
       child: MediaQuery(
         data: base.copyWith(displayFeatures: features),
-        child: widget.child,
+        child: FoldStatePublisher(child: widget.child),
       ),
     );
   }
@@ -123,6 +132,7 @@ class _FoldKitScopeState extends State<FoldKitScope> {
     setState(() {
       _status = status;
       _angle = (event['angle'] as num?)?.toDouble();
+      _model = event['model'] as String? ?? _model;
       // Same rule as Flutter's Android behaviour: a fold splits layouts only while half open.
       _folds = status == HingeStatus.partiallyOpen ? folds : const [];
     });
@@ -137,15 +147,19 @@ class FoldScopeData extends InheritedWidget {
   /// Hinge angle in degrees.
   final double? angle;
 
+  /// Device model id reported by the platform.
+  final String? model;
+
   /// Creates the data.
   const FoldScopeData({
     super.key,
     required this.status,
     required this.angle,
+    this.model,
     required super.child,
   });
 
   @override
   bool updateShouldNotify(FoldScopeData old) =>
-      old.status != status || old.angle != angle;
+      old.status != status || old.angle != angle || old.model != model;
 }

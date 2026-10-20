@@ -80,8 +80,8 @@ void main() {
                 padding = MediaQuery.paddingOf(context);
                 return FoldScaffold(
                   destinations: const [
-                    FoldDestination(icon: Icons.home, label: 'Home'),
-                    FoldDestination(icon: Icons.person, label: 'Me'),
+                    FoldDestination(icon: Icon(Icons.home), label: 'Home'),
+                    FoldDestination(icon: Icon(Icons.person), label: 'Me'),
                   ],
                   body: const SizedBox(),
                 );

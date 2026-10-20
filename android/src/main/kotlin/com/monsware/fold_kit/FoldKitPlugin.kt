@@ -28,6 +28,7 @@ class FoldKitPlugin : FlutterPlugin, EventChannel.StreamHandler, SensorEventList
 
     override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
         sink = events
+        send(null)
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
         val hinge = sensorManager?.getDefaultSensor(Sensor.TYPE_HINGE_ANGLE) ?: return
         sensorManager?.registerListener(this, hinge, SensorManager.SENSOR_DELAY_UI)
@@ -39,7 +40,18 @@ class FoldKitPlugin : FlutterPlugin, EventChannel.StreamHandler, SensorEventList
     }
 
     override fun onSensorChanged(event: SensorEvent) {
-        sink?.success(mapOf("status" to "unknown", "angle" to event.values[0].toDouble(), "folds" to emptyList<Any>()))
+        send(event.values[0].toDouble())
+    }
+
+    private fun send(angle: Double?) {
+        sink?.success(
+            mapOf(
+                "status" to "unknown",
+                "angle" to angle,
+                "folds" to emptyList<Any>(),
+                "model" to Build.MODEL,
+            ),
+        )
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}

@@ -137,6 +137,7 @@ class _FoldPreviewState extends State<FoldPreview> {
             viewInsets: EdgeInsets.zero,
           ),
           child: FoldScopeData(
+            model: _device.modelIds.isEmpty ? null : _device.modelIds.first,
             status: !hasHinge
                 ? HingeStatus.unknown
                 : switch (_posture) {

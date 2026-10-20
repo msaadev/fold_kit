@@ -46,6 +46,7 @@ void main() {
   Map<String, Object?> event(String status) => {
     'status': status,
     'angle': 130.0,
+    'model': 'iPhone19,4',
     'folds': [
       {'x': 455.5, 'y': 0.0, 'width': 40.0, 'height': 669.0},
     ],
@@ -66,6 +67,22 @@ void main() {
     expect(info().posture, FoldPosture.halfOpen);
     expect(info().axis, FoldAxis.vertical);
     expect(info().rect, const Rect.fromLTWH(455.5, 0, 40, 669));
+  }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+
+  testWidgets('FoldKit.changes streams posture, angle and device', (
+    tester,
+  ) async {
+    final seen = <FoldState>[];
+    final sub = FoldKit.changes.listen(seen.add);
+    addTearDown(sub.cancel);
+    await pump(tester);
+    await send(tester, 'partiallyOpen');
+    await tester.pump();
+    final last = seen.last;
+    expect(last.isHalfOpen, isTrue);
+    expect(last.angle, 130);
+    expect(last.device?.name, 'iPhone Duo');
+    expect(FoldKit.current, last);
   }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
 
   testWidgets('flat and closed do not split layouts', (tester) async {

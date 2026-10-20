@@ -94,11 +94,15 @@ void main() {
       placement: placement,
       actions: [
         for (var i = 0; i < actionCount; i++)
-          FoldAction(icon: Icons.search, label: 'Action $i', onPressed: () {}),
+          FoldAction(
+            icon: const Icon(Icons.search),
+            label: 'Action $i',
+            onPressed: () {},
+          ),
       ],
       destinations: const [
-        FoldDestination(icon: Icons.home, label: 'Home'),
-        FoldDestination(icon: Icons.person, label: 'Profile'),
+        FoldDestination(icon: Icon(Icons.home), label: 'Home'),
+        FoldDestination(icon: Icon(Icons.person), label: 'Profile'),
       ],
       body: const _Counter(),
     );
@@ -123,6 +127,31 @@ void main() {
       expect(find.text('Home'), findsOneWidget);
       expect(find.text('Action 0'), findsOneWidget);
       expect(find.text('1'), findsOneWidget);
+    });
+
+    testWidgets('migration: own bottom bar on phones, no extra app bar', (
+      tester,
+    ) async {
+      const items = [
+        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
+        BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Me'),
+      ];
+      Widget app() => FoldScaffold(
+        body: const SizedBox(),
+        bottomNavigationBar: BottomNavigationBar(items: items),
+        destinations: [for (final i in items) FoldDestination.fromItem(i)],
+        barTheme: const FoldBarTheme(selectedColor: Color(0xFFFFB300)),
+      );
+
+      await pump(tester, app(), size: const Size(390, 844));
+      expect(find.byType(AppBar), findsNothing);
+      expect(find.byType(BottomNavigationBar), findsOneWidget);
+      expect(find.byType(NavigationBar), findsNothing);
+
+      await pump(tester, app(), size: const Size(1100, 700));
+      expect(find.byType(BottomNavigationBar), findsNothing);
+      final home = tester.widget<Text>(find.text('Home'));
+      expect(home.style?.color, const Color(0xFFFFB300));
     });
 
     testWidgets('short vertical bar moves actions into the overflow menu', (

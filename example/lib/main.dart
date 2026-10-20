@@ -38,23 +38,23 @@ class _HomePageState extends State<HomePage> {
 
   static const _tabs = [
     FoldDestination(
-      icon: Icons.vertical_split_outlined,
-      selectedIcon: Icons.vertical_split,
+      icon: Icon(Icons.vertical_split_outlined),
+      selectedIcon: Icon(Icons.vertical_split),
       label: 'Panes',
     ),
     FoldDestination(
-      icon: Icons.menu_book_outlined,
-      selectedIcon: Icons.menu_book,
+      icon: Icon(Icons.menu_book_outlined),
+      selectedIcon: Icon(Icons.menu_book),
       label: 'Hinge',
     ),
     FoldDestination(
-      icon: Icons.ads_click_outlined,
-      selectedIcon: Icons.ads_click,
+      icon: Icon(Icons.ads_click_outlined),
+      selectedIcon: Icon(Icons.ads_click),
       label: 'Avoid',
     ),
     FoldDestination(
-      icon: Icons.info_outline,
-      selectedIcon: Icons.info,
+      icon: Icon(Icons.info_outline),
+      selectedIcon: Icon(Icons.info),
       label: 'Info',
     ),
   ];
@@ -65,18 +65,18 @@ class _HomePageState extends State<HomePage> {
       title: Text(_tabs[_tab].label),
       actions: [
         FoldAction(
-          icon: Icons.add,
+          icon: Icon(Icons.add),
           label: 'New',
           prominent: true,
           onPressed: () => _toast('FoldAction: New'),
         ),
         FoldAction(
-          icon: Icons.search,
+          icon: Icon(Icons.search),
           label: 'Search',
           onPressed: () => _toast('FoldAction: Search'),
         ),
         FoldAction(
-          icon: Icons.share_outlined,
+          icon: Icon(Icons.share_outlined),
           label: 'Share',
           onPressed: () => _toast('FoldAction: Share'),
         ),
@@ -320,6 +320,12 @@ class InfoPage extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        _buildRow(
+          'Device',
+          FoldKit.of(context).device?.name ?? 'not in catalog',
+        ),
+        _buildRow('Model', FoldKit.of(context).model ?? '—'),
+        _buildRow('Foldable', FoldKit.of(context).isFoldable ? 'yes' : 'no'),
         _buildRow('Posture', fold.posture.name),
         _buildRow('Hinge status', FoldKitScope.statusOf(context).name),
         _buildRow('Hinge angle', angle == null ? '—' : '${angle.round()}°'),
