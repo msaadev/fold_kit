@@ -91,5 +91,5 @@ void main() {
       ),
     );
     expect(info.posture, FoldPosture.none);
-  }, variant: TargetPlatformVariant.only(TargetPlatform.android));
+  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
 }

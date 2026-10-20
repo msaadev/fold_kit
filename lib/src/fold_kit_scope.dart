@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-/// Hinge status reported by the platform (iPhone Duo today).
+/// Hinge status reported by the platform (iPhone Duo; Android reports only the angle).
 enum HingeStatus {
   /// Not reported (no hinge, or an older OS).
   unknown,
@@ -46,7 +46,8 @@ class FoldKitScope extends StatefulWidget {
       context.dependOnInheritedWidgetOfExactType<_FoldScopeData>()?.status ??
       HingeStatus.unknown;
 
-  /// The latest hinge angle in degrees, `null` when not reported.
+  /// The latest hinge angle in degrees (iPhone Duo, Android foldables with a
+  /// hinge sensor), `null` when not reported. Use it for interaction, not layout.
   static double? angleOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<_FoldScopeData>()?.angle;
 
@@ -63,7 +64,9 @@ class _FoldKitScopeState extends State<FoldKitScope> {
   @override
   void initState() {
     super.initState();
-    if (defaultTargetPlatform != TargetPlatform.iOS || kIsWeb) return;
+    final native = defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android;
+    if (!native || kIsWeb) return;
     _subscription = FoldKitScope.channel.receiveBroadcastStream().listen(
       _onEvent,
       onError: (_) {},

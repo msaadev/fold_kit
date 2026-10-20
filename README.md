@@ -13,43 +13,75 @@ that never put a button on the hinge.
 
 ## One API for every device and platform
 
-Write your layout once. `fold_kit` answers the same questions everywhere, so the same code runs on
-a phone, a foldable, a tablet, the web and desktop:
+Write your layout once. `fold_kit` answers the same questions everywhere and gives you widgets that
+do the adaptive work for you:
 
-| Device | Fold position & posture | Window size class |
-|---|---|---|
-| Samsung Galaxy Z Fold / Flip, Pixel Fold, other Android foldables | ✅ | ✅ |
-| iPhone Duo (iOS 27.1) | 🔜 0.1 | ✅ |
-| iPad, Android tablets | — (no fold, reported as `none`) | ✅ |
-| Phones, web, macOS, Windows, Linux | — (no fold, reported as `none`) | ✅ |
+| Device | Fold & posture | Hinge angle | Vertical bars | Size class |
+|---|---|---|---|---|
+| iPhone Duo (iOS 27.1) | ✅ | ✅ | ✅ | ✅ |
+| Galaxy Z Fold / Flip, Pixel Fold, Android foldables | ✅ | ✅ (API 30+) | on wide landscape | ✅ |
+| iPad, Android tablets | — (`none`) | — | on wide landscape | ✅ |
+| Phones, web, macOS, Windows, Linux | — (`none`) | — | — | ✅ |
 
-Other packages cover one device (for example only iPhone Duo). `fold_kit` is cross-platform by design:
-one `FoldInfo`, one set of widgets, every platform.
+Other packages cover one device (for example only iPhone Duo). `fold_kit` is cross-platform by design.
 
-## What works today (0.0.x)
+<p align="center"><img src="https://raw.githubusercontent.com/msaadev/fold_kit/main/screen_shots/duo_closed.png" width="280" alt="fold_kit on iPhone Duo outer display: FoldScaffold vertical bar"></p>
+
+## Setup
 
 ```dart
-import 'package:fold_kit/fold_kit.dart';
-
-final fold = FoldInfo.of(context);
-
-fold.hasFold;          // a fold or hinge is in view
-fold.rect;             // where it is, in logical pixels
-fold.axis;             // FoldAxis.vertical (book) or .horizontal (tabletop)
-fold.posture;          // none, closed, halfOpen, flat
-fold.windowSizeClass;  // compact (< 600), medium (< 840), expanded
+void main() => runApp(const FoldKitScope(child: MyApp()));
 ```
 
-Fold data comes from Flutter's `MediaQuery.displayFeatures`, which Flutter fills on Android
-foldables today.
+`FoldKitScope` adds the iPhone Duo fold and the hinge angle; on other platforms it passes through.
+Build your iOS app with Xcode 27.1 to get the iPhone Duo data.
 
-## Coming in 0.1: less code for adaptive layouts
+## FoldScaffold: iPhone Duo-style bars in one line
 
-- **iPhone Duo**: the fold and posture on iOS 27.1 (Flutter does not report them on iOS yet).
-- **`FoldScaffold`**: app bar and tabs move into a vertical bar on the right, like system apps on iPhone Duo.
-- **Hinge angle** stream (iPhone Duo, Android foldables).
-- **`FoldTwoPane`** and **`FoldAvoid`**: split at the fold, keep buttons off the hinge.
-- A live **device catalog** of current foldables and test helpers for every posture.
+```dart
+FoldScaffold(
+  title: const Text('Rides'),
+  actions: [
+    FoldAction(icon: Icons.add, label: 'New', prominent: true, onPressed: create),
+    FoldAction(icon: Icons.search, label: 'Search', onPressed: search),
+  ],
+  destinations: const [
+    FoldDestination(icon: Icons.list_alt, label: 'Rides'),
+    FoldDestination(icon: Icons.person, label: 'Profile'),
+  ],
+  selectedIndex: tab,
+  onDestinationSelected: (i) => setState(() => tab = i),
+  body: page,
+)
+```
+
+On iPhone Duo the system moves native app bars and tab bars into a vertical bar on the right.
+Flutter draws its own bars, so they would stay horizontal; `FoldScaffold` does the same move.
+
+## FoldTwoPane: split at the fold
+
+```dart
+FoldTwoPane(start: RideList(), end: RideDetail())
+```
+
+Book posture: split exactly at the hinge. Tabletop: top and bottom. Tablet: side by side. Phone: one pane.
+
+## FoldInfo and FoldAvoid
+
+```dart
+final fold = FoldInfo.of(context);
+fold.posture;          // none, closed, halfOpen, flat
+fold.rect;             // the fold in logical pixels
+fold.windowSizeClass;  // compact, medium, expanded
+
+FoldAvoid(child: FloatingActionButton(onPressed: go)); // never on the hinge
+FoldKitScope.angleOf(context);                          // hinge angle in degrees
+```
+
+## Coming next
+
+A live device catalog of current foldables, test helpers for every posture, a debug overlay
+with a fake fold, and a guide for moving from `dual_screen`.
 
 ## Keywords
 
