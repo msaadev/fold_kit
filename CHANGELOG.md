@@ -19,6 +19,10 @@ First stable release: one foldable and large-screen API for every device.
 * `FoldKitScope` follows rotation and window resizing (MediaQuery used to keep the first size on
   Android, web and desktop).
 * `fold_kit:audit` flags `UIRequiresFullScreen` only when it is `true`.
+* `FoldScaffold`: screen readers can press the vertical bar buttons; your own `AppBar`'s title,
+  leading and actions show in the vertical layout too; the bar scrolls instead of overflowing on short
+  windows; `drawer` and `endDrawer` are passed through, so renaming `Scaffold` works for apps with a drawer.
+* `FoldDevice` equality by `id`: `FoldPreview` keeps its selection after `FoldDevices.refresh()`.
 * iOS hinge angle is reported in degrees (UIKit gives radians); fully open is 180.
 * Everything from 0.1.0 below.
 
