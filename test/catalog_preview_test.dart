@@ -83,7 +83,7 @@ void main() {
                     FoldDestination(icon: Icon(Icons.home), label: 'Home'),
                     FoldDestination(icon: Icon(Icons.person), label: 'Me'),
                   ],
-                  body: const SizedBox(),
+                  body: const SizedBox.expand(key: Key('body')),
                 );
               },
             ),
@@ -93,7 +93,12 @@ void main() {
         expect(info.windowSize, const Size(466, 678));
         expect(padding.right, 84);
         expect(find.byType(NavigationBar), findsNothing);
-        expect(find.text('Home'), findsOneWidget);
+        final body = find.byKey(const Key('body'));
+        expect(tester.getSize(body).width, 466 - 84);
+        expect(
+          tester.getCenter(find.byTooltip('Home')).dx,
+          greaterThan(tester.getRect(body).right),
+        );
       },
     );
 

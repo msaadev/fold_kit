@@ -59,24 +59,53 @@ FoldListener(
 FoldKit.changes.listen((fold) { ... }); // outside widgets
 ```
 
-## Migrating an existing app (about an hour for the shell)
-
-1. `fold_kit` in `pubspec.yaml`, wrap the app: `FoldKitScope(child: MyApp())`.
-2. In the screen that owns your tabs, rename `Scaffold` to `FoldScaffold`. Keep your `appBar` and
-   `bottomNavigationBar` — phones look exactly the same. Add:
+## Hinge angle
 
 ```dart
-destinations: [for (final item in navItems) FoldDestination.fromItem(item)],
-selectedIndex: index,
-onDestinationSelected: onTabTap,
-barTheme: const FoldBarTheme(selectedColor: brandYellow, backgroundColor: Colors.white),
+FoldListener(
+  onAngleChanged: (angle) => setState(() => hinge = angle), // degrees: 0 shut, 180 flat
+  child: page,
+)
+
+FoldKitScope.angleOf(context);        // read it in build (rebuilds on change)
+FoldKit.angles.listen((angle) { ... }); // outside widgets
 ```
 
-3. `dart run fold_kit:audit` and fix what it lists (mostly `MediaQuery.of(context).size` →
-   `MediaQuery.sizeOf(context)`).
-4. Where a wide layout helps, `FoldBuilder` or `FoldTwoPane`. Everything else keeps working.
+`null` means no hinge sensor (phones, tablets, Android below API 30). Use it for interaction
+(a protractor, a camera stand mode), not for layout: layout follows the posture.
 
-## FoldScaffold: iPhone Duo-style bars in one line
+## FoldScaffold: rename `Scaffold`, done
+
+On iPhone Duo, iOS moves a native app's tab bar and toolbar buttons into a vertical bar on the
+right (outer display, and the inner display in landscape). Flutter draws its own bars, so they
+would stay at the bottom. Rename `Scaffold` to `FoldScaffold` and they move the same way:
+
+```dart
+FoldScaffold(                       // was: Scaffold(
+  appBar: AppBar(
+    title: const Text('Rides'),
+    actions: [IconButton(icon: const Icon(Icons.search), onPressed: search)],
+  ),
+  bottomNavigationBar: NavigationBar(  // or BottomNavigationBar / CupertinoTabBar
+    selectedIndex: tab,
+    onDestinationSelected: (i) => setState(() => tab = i),
+    destinations: const [
+      NavigationDestination(icon: Icon(Icons.list_alt), label: 'Rides'),
+      NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),
+    ],
+  ),
+  body: page,
+)
+```
+
+Phones look exactly the same. Where iOS would go vertical, the title, back button, actions and
+tabs go into one bar on the right (on iPhone Duo inside the status strip, below the clock, like
+native apps), with the same selection and taps. The body keeps its state.
+Pass the bar directly (not wrapped in another widget) so it can be read; otherwise give
+`destinations`, `selectedIndex` and `onDestinationSelected` yourself.
+
+Want tooltip and screen reader labels, a prominent "Done" button and an overflow menu when the bar is short? Use
+`FoldAction`s instead of an `AppBar`:
 
 ```dart
 FoldScaffold(
@@ -85,18 +114,126 @@ FoldScaffold(
     FoldAction(icon: Icon(Icons.add), label: 'New', prominent: true, onPressed: create),
     FoldAction(icon: Icon(Icons.search), label: 'Search', onPressed: search),
   ],
-  destinations: const [
-    FoldDestination(icon: Icon(Icons.list_alt), label: 'Rides'),
-    FoldDestination(icon: Icon(Icons.person), label: 'Profile'),
-  ],
+  barTheme: const FoldBarTheme(selectedColor: brandYellow),
+  ...
+)
+```
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/msaadev/fold_kit/main/screen_shots/native_duo_closed.png" width="200" alt="Native SwiftUI app on iPhone Duo outer display">
+<img src="https://raw.githubusercontent.com/msaadev/fold_kit/main/screen_shots/duo_closed.png" width="200" alt="FoldScaffold on iPhone Duo outer display, same place as native">
+<img src="https://raw.githubusercontent.com/msaadev/fold_kit/main/screen_shots/duo_closed_glass.png" width="200" alt="FoldScaffold with glass capsules on iPhone Duo">
+<img src="https://raw.githubusercontent.com/msaadev/fold_kit/main/screen_shots/iphone17_glass.png" width="134" alt="Floating glass tab bar on iPhone 17">
+<br><sub>Native SwiftUI · FoldScaffold · FoldScaffold glass · glass tab bar on iPhone 17</sub>
+</p>
+
+### Glass look
+
+```dart
+FoldScaffold(
+  destinations: tabs,                 // tabs built by FoldScaffold
   selectedIndex: tab,
   onDestinationSelected: (i) => setState(() => tab = i),
+  barTheme: const FoldBarTheme(glass: true),
   body: page,
 )
 ```
 
-On iPhone Duo the system moves native app bars and tab bars into a vertical bar on the right.
-Flutter draws its own bars, so they would stay horizontal; `FoldScaffold` does the same move.
+The vertical bar's capsules turn into blurred, see-through glass with a light rim, and on phones the
+tabs become a floating glass capsule over the page (the body scrolls under it). If you pass your own
+`bottomNavigationBar`, phones keep it as it is. This is a Flutter approximation of Liquid Glass (blur
++ tint + rim), not Apple's refraction, and it adds no dependency.
+
+### Vertical or bottom: your choice
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/msaadev/fold_kit/main/screen_shots/android_fold_bottom.png" width="300" alt="Pixel 9 Pro Fold open with a bottom bar: the bar takes a wide strip">
+<img src="https://raw.githubusercontent.com/msaadev/fold_kit/main/screen_shots/android_fold_vertical.png" width="300" alt="Pixel 9 Pro Fold open with the vertical bar: the page gets the full height">
+<br><sub>Pixel 9 Pro Fold open: bottom bar vs vertical bar. The vertical bar gives the page its full height.</sub>
+</p>
+
+On a big screen a bottom bar spans the whole width for three icons. The vertical bar uses one
+narrow column and gives the page its full height, so it is **on by default** wherever it helps:
+
+| `placement` | Bars |
+|---|---|
+| `FoldBarPlacement.auto` (default) | iPhone Duo: vertical on the outer display and in landscape, like native apps. Everywhere else: vertical on windows 840+ wide (open Android foldables, tablets), bottom on phones. |
+| `FoldBarPlacement.bottom` | Always your app bar + bottom bar. |
+| `FoldBarPlacement.trailing` | Always the vertical bar, phones too (iPhone 17, Pixel): no app bar and no bottom bar, the page gets the whole screen. |
+
+Let your users pick it in settings, it is just a value:
+
+```dart
+FoldScaffold(
+  placement: settings.barPlacement,   // auto / bottom / trailing, saved by your app
+  ...
+)
+```
+
+Change the rule, the look, or the whole bar:
+
+```dart
+FoldScaffold(
+  // your own rule for `auto`
+  verticalWhen: (fold) => fold.isOpen || fold.info.windowSizeClass == WindowSizeClass.expanded,
+  // colors, glass, width, where it starts below the Duo clock
+  barTheme: const FoldBarTheme(glass: true, width: 88, selectedColor: brandYellow),
+  // or draw the bar yourself: tabs, actions, back button and callbacks are handed to you
+  verticalBarBuilder: (context, bar) => MyRail(
+    tabs: bar.destinations,
+    selected: bar.selectedIndex,
+    onTap: bar.onDestinationSelected,
+    actions: bar.actions,
+  ),
+  ...
+)
+```
+
+`FoldScaffold.isVertical(context, placement)` tells you which layout is on screen, e.g. to move a
+FAB or hide a duplicate button.
+
+### Which button goes where
+
+| What | Put it in | On phones | In the vertical bar |
+|---|---|---|---|
+| 2–5 main sections of the app | `bottomNavigationBar` (or `destinations`) | bottom bar | bottom capsule, icon only |
+| Back / close | `AppBar.leading` or `leading` (default: back when the route can pop) | app bar, left | own capsule at the top |
+| Actions for this page (search, add, share) | `AppBar.actions` or `actions: [FoldAction]` | app bar, right | top capsule, icon only |
+| The one main action (Done, Save) | `FoldAction(prominent: true)` | first action | first, colored, never in the overflow |
+| Page title | `AppBar.title` or `title` | app bar | top of the page |
+| Create something (FAB) | `floatingActionButton` | unchanged | unchanged |
+
+Rules that keep the vertical bar clean:
+
+- **Every button needs an icon and a label.** The vertical bar shows only the icon; the label is the
+  tooltip and what screen readers say. With `IconButton`, set `tooltip`.
+- **Tabs are places, actions are verbs.** Don't put "Profile" in `actions` or "Share" in the tabs.
+- **Keep actions to 2–3.** When the bar is short, extra actions (lowest `priority` first) move into a
+  "…" menu; with `compression: FoldBarCompression.tabsFirst` tabs go first instead.
+- **Don't wrap the bar.** Pass `NavigationBar` / `BottomNavigationBar` / `CupertinoTabBar` directly so
+  its tabs can be read; a custom bottom bar needs `destinations` + `selectedIndex` +
+  `onDestinationSelected`.
+- **Custom app bars** (`SliverAppBar`, your own widget): give `title`, `leading` and `actions`
+  to `FoldScaffold` so the vertical bar can show them.
+
+## Adding it to a large existing app
+
+You don't migrate the app, you migrate **one screen**: the one that owns the tabs. Every other
+screen keeps its `Scaffold` and works as before.
+
+1. `fold_kit` in `pubspec.yaml`, wrap the app once: `runApp(FoldKitScope(child: MyApp()))`.
+   Nothing changes on phones; it only adds fold data.
+2. In the shell screen (tabs), rename `Scaffold` to `FoldScaffold`. It takes the same parameters
+   (`appBar`, `body`, `bottomNavigationBar`, `floatingActionButton`, `floatingActionButtonLocation`,
+   `drawer`, `endDrawer`, `bottomSheet`, `persistentFooterButtons`, `backgroundColor`,
+   `extendBody`, `extendBodyBehindAppBar`, `resizeToAvoidBottomInset`), so it compiles as is.
+   Phones look exactly the same because your own bars are used.
+3. `dart run fold_kit:audit` lists what breaks on foldables (mostly `MediaQuery.of(context).size`
+   → `MediaQuery.sizeOf(context)`). Add `--fatal` in CI so new ones don't come back.
+4. Later, screen by screen: rename the `Scaffold` of pages with toolbar buttons (detail, editor) so
+   their buttons move too, and use `FoldBuilder` / `FoldTwoPane` where a wide layout helps.
+
+A dry run on a production taxi app took about 30 minutes for steps 1–2 (~30 changed lines).
 
 ## FoldTwoPane: split at the fold
 

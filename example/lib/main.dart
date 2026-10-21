@@ -37,53 +37,53 @@ class _HomePageState extends State<HomePage> {
   int _tab = 0;
 
   static const _tabs = [
-    FoldDestination(
+    NavigationDestination(
       icon: Icon(Icons.vertical_split_outlined),
       selectedIcon: Icon(Icons.vertical_split),
       label: 'Panes',
     ),
-    FoldDestination(
+    NavigationDestination(
       icon: Icon(Icons.menu_book_outlined),
       selectedIcon: Icon(Icons.menu_book),
       label: 'Hinge',
     ),
-    FoldDestination(
+    NavigationDestination(
       icon: Icon(Icons.ads_click_outlined),
       selectedIcon: Icon(Icons.ads_click),
       label: 'Avoid',
     ),
-    FoldDestination(
+    NavigationDestination(
       icon: Icon(Icons.info_outline),
       selectedIcon: Icon(Icons.info),
       label: 'Info',
     ),
   ];
 
+  // A plain Scaffold renamed to FoldScaffold: on iPhone Duo the AppBar actions
+  // and the NavigationBar move into the vertical bar on the right, like iOS.
   @override
   Widget build(BuildContext context) {
     return FoldScaffold(
-      title: Text(_tabs[_tab].label),
-      actions: [
-        FoldAction(
-          icon: Icon(Icons.add),
-          label: 'New',
-          prominent: true,
-          onPressed: () => _toast('FoldAction: New'),
-        ),
-        FoldAction(
-          icon: Icon(Icons.search),
-          label: 'Search',
-          onPressed: () => _toast('FoldAction: Search'),
-        ),
-        FoldAction(
-          icon: Icon(Icons.share_outlined),
-          label: 'Share',
-          onPressed: () => _toast('FoldAction: Share'),
-        ),
-      ],
-      destinations: _tabs,
-      selectedIndex: _tab,
-      onDestinationSelected: (i) => setState(() => _tab = i),
+      appBar: AppBar(
+        title: Text(_tabs[_tab].label),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'New',
+            onPressed: () => _toast('New'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: 'Search',
+            onPressed: () => _toast('Search'),
+          ),
+        ],
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _tab,
+        onDestinationSelected: (i) => setState(() => _tab = i),
+        destinations: _tabs,
+      ),
       body: IndexedStack(
         index: _tab,
         children: const [PanesPage(), HingePage(), AvoidPage(), InfoPage()],

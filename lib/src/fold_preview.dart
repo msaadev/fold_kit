@@ -113,7 +113,11 @@ class _FoldPreviewState extends State<FoldPreview> {
           state: DisplayFeatureState.postureFlat,
         ),
     ];
-    final padding = closed ? _device.outerPadding : EdgeInsets.zero;
+    final padding = closed
+        ? _device.outerPadding
+        : _portrait
+        ? EdgeInsets.zero
+        : _device.innerPadding;
     final base = MediaQuery.maybeOf(context) ?? const MediaQueryData();
     return FoldWindowAnchor(
       windowKey: _windowKey,

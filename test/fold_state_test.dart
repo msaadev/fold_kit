@@ -80,4 +80,33 @@ void main() {
     await pump(tester, page(FoldPosture.flat));
     expect(seen, [FoldPosture.halfOpen, FoldPosture.flat]);
   });
+
+  testWidgets('FoldListener.onAngleChanged reports only angle changes', (
+    tester,
+  ) async {
+    final angles = <double?>[];
+    Widget page(FoldPosture posture) => FoldPreview(
+      posture: posture,
+      child: FoldListener(
+        onAngleChanged: angles.add,
+        fireImmediately: true,
+        child: const SizedBox(),
+      ),
+    );
+
+    await pump(tester, page(FoldPosture.closed));
+    await pump(tester, page(FoldPosture.closed));
+    await pump(tester, page(FoldPosture.halfOpen));
+    expect(angles, [0, 120]);
+  });
+
+  test('Android outer display: small hinge angle means closed', () {
+    const info = FoldInfo(
+      posture: FoldPosture.none,
+      windowSize: Size(412, 915),
+    );
+    expect(const FoldState(info: info, angle: 0).isClosed, isTrue);
+    expect(const FoldState(info: info, angle: 90).posture, FoldPosture.none);
+    expect(const FoldState(info: info).posture, FoldPosture.none);
+  });
 }

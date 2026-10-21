@@ -56,6 +56,10 @@ class FoldDevice {
   /// Safe area of the outer display (iPhone Duo: the status strip on the right).
   final EdgeInsets outerPadding;
 
+  /// Safe area of the inner display in landscape (iPhone Duo: the same status
+  /// strip on the right).
+  final EdgeInsets innerPadding;
+
   /// How the numbers were checked: `simulator`, `emulator`, `device` or `spec`.
   final String verified;
 
@@ -70,6 +74,7 @@ class FoldDevice {
     this.outer,
     this.fold,
     this.outerPadding = EdgeInsets.zero,
+    this.innerPadding = EdgeInsets.zero,
     this.modelIds = const [],
     this.verified = 'spec',
   });
@@ -107,6 +112,7 @@ class FoldDevice {
       outer: json['outer'] == null ? null : size(json['outer']),
       fold: fold,
       outerPadding: _insets(json['outerPadding']),
+      innerPadding: _insets(json['innerPadding']),
       modelIds: [for (final m in json['modelIds'] as List? ?? const []) '$m'],
       verified: json['verified'] as String? ?? 'spec',
     );
@@ -204,6 +210,7 @@ abstract final class FoldDevices {
       outer: Size(466, 678),
       fold: Rect.fromLTWH(455.5, 0, 40, 669),
       outerPadding: EdgeInsets.only(right: 84),
+      innerPadding: EdgeInsets.only(right: 84),
       modelIds: ['iPhone19,4'],
       verified: 'simulator',
     ),
@@ -217,6 +224,18 @@ abstract final class FoldDevices {
       outer: Size(411, 960),
       fold: Rect.fromLTWH(416, 0, 0, 750),
       modelIds: ['SM-F966'],
+    ),
+    FoldDevice(
+      id: 'pixel-9-pro-fold',
+      name: 'Pixel 9 Pro Fold',
+      brand: 'Google',
+      platform: 'android',
+      form: FoldForm.book,
+      inner: Size(852, 883),
+      outer: Size(443, 994),
+      fold: Rect.fromLTWH(426, 0, 0, 883),
+      modelIds: ['Pixel 9 Pro Fold'],
+      verified: 'emulator',
     ),
     FoldDevice(
       id: 'ipad-mini',

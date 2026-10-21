@@ -124,8 +124,8 @@ void main() {
       await pump(tester, scaffold(), size: const Size(1100, 700));
       expect(find.byType(AppBar), findsNothing);
       expect(find.byType(NavigationBar), findsNothing);
-      expect(find.text('Home'), findsOneWidget);
-      expect(find.text('Action 0'), findsOneWidget);
+      expect(find.byTooltip('Home'), findsOneWidget);
+      expect(find.byTooltip('Action 0'), findsOneWidget);
       expect(find.text('1'), findsOneWidget);
     });
 
@@ -150,8 +150,71 @@ void main() {
 
       await pump(tester, app(), size: const Size(1100, 700));
       expect(find.byType(BottomNavigationBar), findsNothing);
-      final home = tester.widget<Text>(find.text('Home'));
-      expect(home.style?.color, const Color(0xFFFFB300));
+      final home = tester.element(find.byIcon(Icons.home_outlined));
+      expect(IconTheme.of(home).color, const Color(0xFFFFB300));
+    });
+
+    testWidgets('native NavigationBar and AppBar fill the vertical bar', (
+      tester,
+    ) async {
+      final taps = <int>[];
+      var pressed = 0;
+      Widget app() => FoldScaffold(
+        appBar: AppBar(
+          title: const Text('Rides'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () => pressed++,
+            ),
+          ],
+        ),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: 1,
+          onDestinationSelected: taps.add,
+          destinations: const [
+            NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
+            NavigationDestination(icon: Icon(Icons.person), label: 'Me'),
+          ],
+        ),
+        body: const SizedBox(),
+      );
+
+      await pump(tester, app(), size: const Size(1100, 700));
+      expect(find.byType(NavigationBar), findsNothing);
+      expect(find.text('Rides'), findsOneWidget);
+      await tester.tap(find.byTooltip('Home'));
+      await tester.tap(find.byIcon(Icons.search));
+      expect(taps, [0]);
+      expect(pressed, 1);
+      final me = tester.widget<Semantics>(
+        find.byWidgetPredicate(
+          (w) => w is Semantics && w.properties.label == 'Me',
+        ),
+      );
+      expect(me.properties.selected, isTrue);
+    });
+
+    testWidgets('BottomNavigationBar tabs are read without destinations', (
+      tester,
+    ) async {
+      final taps = <int>[];
+      await pump(
+        tester,
+        FoldScaffold(
+          bottomNavigationBar: BottomNavigationBar(
+            onTap: taps.add,
+            items: const [
+              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+              BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Me'),
+            ],
+          ),
+          body: const SizedBox(),
+        ),
+        size: const Size(1100, 700),
+      );
+      await tester.tap(find.byTooltip('Me'));
+      expect(taps, [1]);
     });
 
     testWidgets('short vertical bar moves actions into the overflow menu', (
@@ -163,7 +226,7 @@ void main() {
         size: const Size(700, 400),
       );
       expect(find.byIcon(Icons.more_horiz), findsOneWidget);
-      expect(find.text('Home'), findsOneWidget);
+      expect(find.byTooltip('Home'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

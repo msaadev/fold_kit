@@ -1,6 +1,10 @@
+import 'dart:ui' show ImageFilter;
+
+import 'package:flutter/cupertino.dart' show CupertinoTabBar;
 import 'package:flutter/material.dart';
 
 import 'fold_kit_scope.dart';
+import 'fold_state.dart';
 
 /// An app bar action that can live in a horizontal app bar or a vertical bar.
 class FoldAction {
@@ -56,10 +60,11 @@ class FoldDestination {
       );
 }
 
-/// Colors and text style of the vertical bar, to match your app's own bars.
+/// Colors of the vertical bar, to match your app's own bars.
 @immutable
 class FoldBarTheme {
-  /// Bar background. Defaults to the theme's surface container.
+  /// Background of the capsules that hold the buttons. Defaults to the
+  /// theme's surfaceContainerLowest.
   final Color? backgroundColor;
 
   /// Selected tab and prominent action color. Defaults to the primary color.
@@ -68,11 +73,26 @@ class FoldBarTheme {
   /// Other items. Defaults to onSurfaceVariant.
   final Color? unselectedColor;
 
-  /// Pill behind the selected tab. Defaults to secondaryContainer; use
+  /// Circle behind the selected tab. Defaults to secondaryContainer; use
   /// `Colors.transparent` for none.
   final Color? indicatorColor;
 
-  /// Label text style.
+  /// Distance from the top of the iPhone Duo status strip to the bar, below
+  /// the clock. Defaults to the value measured on iOS 27.1 (170 closed, 120
+  /// open); set it if a future iOS moves the clock.
+  final double? topInset;
+
+  /// Width of the vertical bar where there is no iPhone Duo status strip
+  /// (Android foldables, tablets). Defaults to 72.
+  final double? width;
+
+  /// Liquid Glass look: blurred, see-through capsules with a light rim. Also
+  /// turns the tabs built from `destinations` into a floating glass tab bar on
+  /// phones (your own `bottomNavigationBar` is kept as it is).
+  final bool glass;
+
+  /// Unused: the vertical bar shows icons only, like the native one.
+  @Deprecated('The vertical bar shows icons only; the label is the tooltip.')
   final TextStyle? labelStyle;
 
   /// Creates a bar theme.
@@ -81,14 +101,52 @@ class FoldBarTheme {
     this.selectedColor,
     this.unselectedColor,
     this.indicatorColor,
+    this.glass = false,
+    this.topInset,
+    this.width,
+    @Deprecated('The vertical bar shows icons only; the label is the tooltip.')
     this.labelStyle,
+  });
+}
+
+/// What the vertical bar shows, handed to [FoldScaffold.verticalBarBuilder]
+/// so you can draw the bar any way you like.
+@immutable
+class FoldBarContent {
+  /// Back or close button, `null` when there is none.
+  final Widget? leading;
+
+  /// Actions given as [FoldAction]s (prominent first, then by priority).
+  final List<FoldAction> actions;
+
+  /// Action widgets read from your own `AppBar.actions`.
+  final List<Widget> appBarActions;
+
+  /// The tabs.
+  final List<FoldDestination> destinations;
+
+  /// Index of the selected tab.
+  final int selectedIndex;
+
+  /// Call with a tab index to select it.
+  final ValueChanged<int>? onDestinationSelected;
+
+  /// Creates the content.
+  const FoldBarContent({
+    required this.leading,
+    required this.actions,
+    required this.appBarActions,
+    required this.destinations,
+    required this.selectedIndex,
+    required this.onDestinationSelected,
   });
 }
 
 /// Where the app bar and the tabs go.
 enum FoldBarPlacement {
-  /// iPhone Duo rule: vertical bar on the outer display and on the inner display
-  /// in landscape; otherwise vertical only on wide landscape windows (tablets).
+  /// Vertical where it saves room: on iPhone Duo the outer display and the
+  /// inner display in landscape (like native apps); elsewhere any window 840
+  /// or wider (open Android foldables, tablets). Phones keep bottom bars.
   auto,
 
   /// Always a top app bar and bottom tabs.
@@ -112,10 +170,10 @@ enum FoldBarCompression {
 /// inner display in landscape) — and stay your normal app bar + bottom bar
 /// everywhere else. The body keeps its state when the bars move.
 ///
-/// Migrating an existing screen usually means: rename `Scaffold` to
-/// `FoldScaffold`, keep your `appBar` and `bottomNavigationBar` as they are
-/// (phones look exactly the same), and add `destinations` for the vertical bar
-/// — `FoldDestination.fromItem` reuses your `BottomNavigationBarItem`s.
+/// Migrating an existing screen: rename `Scaffold` to `FoldScaffold`. Your
+/// `AppBar` (title, leading, actions) and your `NavigationBar`,
+/// `BottomNavigationBar` or `CupertinoTabBar` are read as they are, so phones
+/// look exactly the same and the vertical bar gets the same tabs and buttons.
 class FoldScaffold extends StatefulWidget {
   /// Page title.
   final Widget? title;
@@ -126,7 +184,7 @@ class FoldScaffold extends StatefulWidget {
   /// App bar actions.
   final List<FoldAction> actions;
 
-  /// Tabs; empty means no tab bar.
+  /// Tabs; when empty they are read from [bottomNavigationBar].
   final List<FoldDestination> destinations;
 
   /// The selected tab.
@@ -153,11 +211,23 @@ class FoldScaffold extends StatefulWidget {
   final PreferredSizeWidget? appBar;
 
   /// Your own bottom bar for the horizontal layout, so phones keep their exact
-  /// look. When `null`, a [NavigationBar] is built from [destinations].
+  /// look. A [NavigationBar], [BottomNavigationBar] or [CupertinoTabBar] also
+  /// gives the vertical bar its tabs, selection and tap callback. When `null`,
+  /// a [NavigationBar] is built from [destinations].
   final Widget? bottomNavigationBar;
 
   /// Colors of the vertical bar.
   final FoldBarTheme? barTheme;
+
+  /// With [FoldBarPlacement.auto]: your own rule for when the bars go
+  /// vertical, e.g. `(fold) => fold.info.windowSizeClass != WindowSizeClass.compact`.
+  /// Defaults to the rule described on [FoldBarPlacement.auto].
+  final bool Function(FoldState fold)? verticalWhen;
+
+  /// Draws the whole vertical bar yourself from its [FoldBarContent]. It gets
+  /// the bar's column (the iPhone Duo status strip, or [FoldBarTheme.width]).
+  final Widget Function(BuildContext context, FoldBarContent bar)?
+  verticalBarBuilder;
 
   /// Passed to the inner [Scaffold].
   final Color? backgroundColor;
@@ -167,6 +237,18 @@ class FoldScaffold extends StatefulWidget {
 
   /// Passed to the inner [Scaffold].
   final Widget? drawer, endDrawer;
+
+  /// Passed to the inner [Scaffold].
+  final Widget? bottomSheet;
+
+  /// Passed to the inner [Scaffold].
+  final FloatingActionButtonLocation? floatingActionButtonLocation;
+
+  /// Passed to the inner [Scaffold].
+  final List<Widget>? persistentFooterButtons;
+
+  /// Passed to the inner [Scaffold]; the glass tab bar turns [extendBody] on.
+  final bool extendBody, extendBodyBehindAppBar;
 
   /// Creates the scaffold.
   const FoldScaffold({
@@ -184,26 +266,39 @@ class FoldScaffold extends StatefulWidget {
     this.appBar,
     this.bottomNavigationBar,
     this.barTheme,
+    this.verticalWhen,
+    this.verticalBarBuilder,
     this.backgroundColor,
     this.resizeToAvoidBottomInset,
     this.drawer,
     this.endDrawer,
+    this.bottomSheet,
+    this.floatingActionButtonLocation,
+    this.persistentFooterButtons,
+    this.extendBody = false,
+    this.extendBodyBehindAppBar = false,
   });
 
-  /// Whether the bars are vertical for this window.
-  static bool isVertical(BuildContext context, FoldBarPlacement placement) {
+  /// Whether the bars are vertical for this window with [placement] and an
+  /// optional [verticalWhen] rule (see [FoldScaffold.verticalWhen]).
+  static bool isVertical(
+    BuildContext context,
+    FoldBarPlacement placement, {
+    bool Function(FoldState fold)? verticalWhen,
+  }) {
     switch (placement) {
       case FoldBarPlacement.bottom:
         return false;
       case FoldBarPlacement.trailing:
         return true;
       case FoldBarPlacement.auto:
+        if (verticalWhen != null) return verticalWhen(FoldKit.of(context));
         final size = MediaQuery.sizeOf(context);
         final landscape = size.width > size.height;
         return switch (FoldKitScope.statusOf(context)) {
           HingeStatus.closed => true,
           HingeStatus.partiallyOpen || HingeStatus.fullyOpen => landscape,
-          HingeStatus.unknown => landscape && size.width >= 840,
+          HingeStatus.unknown => size.width >= 840,
         };
     }
   }
@@ -215,28 +310,45 @@ class FoldScaffold extends StatefulWidget {
 class _FoldScaffoldState extends State<FoldScaffold> {
   final _bodyKey = GlobalKey();
 
-  static const double _barWidth = 80;
-  static const double _itemExtent = 64;
+  static const double _barWidth = 72;
+  static const double _itemExtent = 50;
+  static const double _capsuleWidth = 48;
+  static const double _groupGap = 12;
+  static const double _minStripWidth = 56;
 
   @override
   Widget build(BuildContext context) {
     final body = KeyedSubtree(key: _bodyKey, child: widget.body);
-    if (!FoldScaffold.isVertical(context, widget.placement)) {
+    final vertical = FoldScaffold.isVertical(
+      context,
+      widget.placement,
+      verticalWhen: widget.verticalWhen,
+    );
+    if (!vertical) {
       return _buildHorizontal(context, body);
     }
     return _buildVertical(context, body);
   }
 
   Widget _buildHorizontal(BuildContext context, Widget body) {
+    final glassTabs =
+        widget.bottomNavigationBar == null && (widget.barTheme?.glass ?? false);
     return Scaffold(
+      extendBody: glassTabs || widget.extendBody,
+      extendBodyBehindAppBar: widget.extendBodyBehindAppBar,
       backgroundColor: widget.backgroundColor,
       resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
       drawer: widget.drawer,
       endDrawer: widget.endDrawer,
+      bottomSheet: widget.bottomSheet,
+      floatingActionButtonLocation: widget.floatingActionButtonLocation,
+      persistentFooterButtons: widget.persistentFooterButtons,
       appBar: widget.appBar ?? _buildAppBar(),
       body: body,
       floatingActionButton: widget.floatingActionButton,
-      bottomNavigationBar: widget.bottomNavigationBar ?? _buildNavigationBar(),
+      bottomNavigationBar:
+          widget.bottomNavigationBar ??
+          (glassTabs ? _buildGlassTabBar() : _buildNavigationBar()),
     );
   }
 
@@ -276,16 +388,54 @@ class _FoldScaffoldState extends State<FoldScaffold> {
     );
   }
 
+  Widget? _buildGlassTabBar() {
+    if (widget.destinations.isEmpty) return null;
+    final tabs = widget.destinations;
+    return SafeArea(
+      minimum: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+      child: _Glass(
+        theme: widget.barTheme,
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Row(
+            children: [
+              for (var i = 0; i < tabs.length; i++)
+                Expanded(
+                  child: _BarButton(
+                    icon: i == widget.selectedIndex
+                        ? tabs[i].selectedIcon ?? tabs[i].icon
+                        : tabs[i].icon,
+                    label: tabs[i].label,
+                    selected: i == widget.selectedIndex,
+                    onPressed: () => widget.onDestinationSelected?.call(i),
+                    theme: widget.barTheme,
+                    showsLabel: true,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildVertical(BuildContext context, Widget body) {
     final textTheme = Theme.of(context).textTheme;
     final title = widget.title ?? _ownAppBar?.title;
+    final padding = MediaQuery.paddingOf(context);
+    final inStrip = _usesStatusStrip(context);
     return Scaffold(
       backgroundColor: widget.backgroundColor,
       resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
       drawer: widget.drawer,
       endDrawer: widget.endDrawer,
+      bottomSheet: widget.bottomSheet,
+      floatingActionButtonLocation: widget.floatingActionButtonLocation,
+      persistentFooterButtons: widget.persistentFooterButtons,
       floatingActionButton: widget.floatingActionButton,
       body: Row(
+        // The Duo status strip is on the right in every language.
+        textDirection: inStrip ? TextDirection.ltr : null,
         children: [
           Expanded(
             child: SafeArea(
@@ -306,56 +456,55 @@ class _FoldScaffoldState extends State<FoldScaffold> {
               ),
             ),
           ),
-          _buildBar(context),
+          SizedBox(
+            width: inStrip
+                ? padding.right
+                : padding.right + (widget.barTheme?.width ?? _barWidth),
+            child: widget.verticalBarBuilder == null
+                ? _buildBar(context, inStrip)
+                : widget.verticalBarBuilder!(context, _barContent(context)),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildBar(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Material(
-      color: widget.barTheme?.backgroundColor ?? scheme.surfaceContainer,
-      child: SafeArea(
-        left: false,
-        child: SizedBox(
-          width: _barWidth,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final items = _buildBarItems(context, constraints.maxHeight);
-              // Every item but the Spacer is _itemExtent tall.
-              if ((items.length - 1) * _itemExtent <= constraints.maxHeight) {
-                return Column(children: items);
-              }
-              return SingleChildScrollView(
-                child: Column(
-                  children: [
-                    for (final w in items)
-                      if (w is! Spacer) w,
-                  ],
-                ),
-              );
-            },
+  Widget _buildBar(BuildContext context, bool inStrip) {
+    final padding = MediaQuery.paddingOf(context);
+    return Padding(
+      padding: EdgeInsets.only(
+        top: inStrip ? _statusHeight(context) : padding.top + 8,
+        bottom: padding.bottom + 8,
+        right: inStrip ? 0 : padding.right,
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                children: _buildBarGroups(context, constraints.maxHeight),
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  List<Widget> _buildBarItems(BuildContext context, double height) {
-    final leading =
-        widget.leading ??
-        _ownAppBar?.leading ??
-        (ModalRoute.of(context)?.canPop ?? false ? const BackButton() : null);
-    final ownActions = widget.actions.isEmpty
-        ? _ownAppBar?.actions ?? const <Widget>[]
-        : const <Widget>[];
+  List<Widget> _buildBarGroups(BuildContext context, double height) {
+    final content = _barContent(context);
+    final leading = content.leading;
+    final ownActions = content.appBarActions;
+    // Room left after the gaps between the capsules and their inner padding.
     final capacity =
-        (height / _itemExtent).floor() -
+        ((height - 2 * _groupGap - 3 * 8) / _itemExtent).floor() -
         (leading == null ? 0 : 1) -
         ownActions.length;
     final shownActions = [..._orderedActions];
-    final shownTabs = [for (var i = 0; i < widget.destinations.length; i++) i];
+    final tabs = _tabs;
+    final selected = _selectedIndex;
+    final shownTabs = [for (var i = 0; i < tabs.length; i++) i];
     final hiddenActions = <FoldAction>[];
     final hiddenTabs = <int>[];
     var needsMenu = false;
@@ -363,9 +512,7 @@ class _FoldScaffoldState extends State<FoldScaffold> {
         capacity) {
       needsMenu = true;
       final droppableAction = shownActions.lastWhereOrNull((a) => !a.prominent);
-      final droppableTab = shownTabs.lastWhereOrNull(
-        (i) => i != widget.selectedIndex,
-      );
+      final droppableTab = shownTabs.lastWhereOrNull((i) => i != selected);
       final preferAction =
           widget.compression == FoldBarCompression.actionsFirst ||
           droppableTab == null;
@@ -379,12 +526,7 @@ class _FoldScaffoldState extends State<FoldScaffold> {
         break;
       }
     }
-    return [
-      if (leading != null)
-        SizedBox(
-          height: _itemExtent,
-          child: Center(child: leading),
-        ),
+    final actionItems = [
       for (final action in shownActions)
         _BarButton(
           icon: action.icon,
@@ -398,23 +540,76 @@ class _FoldScaffoldState extends State<FoldScaffold> {
           height: _itemExtent,
           child: Center(child: w),
         ),
-      if (needsMenu) _buildOverflow(hiddenActions, hiddenTabs),
+      if (needsMenu) _buildOverflow(hiddenActions, hiddenTabs, tabs),
+    ];
+    return [
+      if (leading != null) ...[
+        _buildCapsule(context, [
+          SizedBox(
+            height: _itemExtent,
+            child: Center(child: leading),
+          ),
+        ]),
+        const SizedBox(height: _groupGap),
+      ],
+      if (actionItems.isNotEmpty) _buildCapsule(context, actionItems),
       const Spacer(),
-      for (final i in shownTabs)
-        _BarButton(
-          icon: i == widget.selectedIndex
-              ? widget.destinations[i].selectedIcon ??
-                    widget.destinations[i].icon
-              : widget.destinations[i].icon,
-          label: widget.destinations[i].label,
-          selected: i == widget.selectedIndex,
-          onPressed: () => widget.onDestinationSelected?.call(i),
-          theme: widget.barTheme,
-        ),
+      if (shownTabs.isNotEmpty) ...[
+        const SizedBox(height: _groupGap),
+        _buildCapsule(context, [
+          for (final i in shownTabs)
+            _BarButton(
+              icon: i == selected
+                  ? tabs[i].selectedIcon ?? tabs[i].icon
+                  : tabs[i].icon,
+              label: tabs[i].label,
+              selected: i == selected,
+              onPressed: () => _onSelected?.call(i),
+              theme: widget.barTheme,
+            ),
+        ]),
+      ],
     ];
   }
 
-  Widget _buildOverflow(List<FoldAction> actions, List<int> tabs) {
+  Widget _buildCapsule(BuildContext context, List<Widget> children) {
+    final scheme = Theme.of(context).colorScheme;
+    if (widget.barTheme?.glass ?? false) {
+      return _Glass(
+        theme: widget.barTheme,
+        child: Container(
+          width: _capsuleWidth,
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(mainAxisSize: MainAxisSize.min, children: children),
+        ),
+      );
+    }
+    return Container(
+      width: _capsuleWidth,
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      decoration: ShapeDecoration(
+        color:
+            widget.barTheme?.backgroundColor ?? scheme.surfaceContainerLowest,
+        shape: StadiumBorder(
+          side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+        ),
+        shadows: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 12,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: children),
+    );
+  }
+
+  Widget _buildOverflow(
+    List<FoldAction> actions,
+    List<int> hiddenTabs,
+    List<FoldDestination> tabs,
+  ) {
     return SizedBox(
       height: _itemExtent,
       child: PopupMenuButton<VoidCallback>(
@@ -428,12 +623,12 @@ class _FoldScaffoldState extends State<FoldScaffold> {
               enabled: a.onPressed != null,
               child: ListTile(leading: a.icon, title: Text(a.label)),
             ),
-          for (final i in tabs)
+          for (final i in hiddenTabs)
             PopupMenuItem(
-              value: () => widget.onDestinationSelected?.call(i),
+              value: () => _onSelected?.call(i),
               child: ListTile(
-                leading: widget.destinations[i].icon,
-                title: Text(widget.destinations[i].label),
+                leading: tabs[i].icon,
+                title: Text(tabs[i].label),
               ),
             ),
         ],
@@ -441,10 +636,76 @@ class _FoldScaffoldState extends State<FoldScaffold> {
     );
   }
 
+  FoldBarContent _barContent(BuildContext context) => FoldBarContent(
+    leading:
+        widget.leading ??
+        _ownAppBar?.leading ??
+        (ModalRoute.of(context)?.canPop ?? false ? const BackButton() : null),
+    actions: _orderedActions,
+    appBarActions: widget.actions.isEmpty
+        ? _ownAppBar?.actions ?? const <Widget>[]
+        : const <Widget>[],
+    destinations: _tabs,
+    selectedIndex: _selectedIndex,
+    onDestinationSelected: _onSelected,
+  );
+
+  /// iPhone Duo keeps the status indicators in a strip on the right edge, and
+  /// native apps put their vertical bar in that strip below them.
+  bool _usesStatusStrip(BuildContext context) =>
+      FoldKitScope.statusOf(context) != HingeStatus.unknown &&
+      MediaQuery.paddingOf(context).right >= _minStripWidth;
+
+  // shortcut: measured on the iPhone Duo simulator (iOS 27.1); read the status
+  // strip frame from the platform once iOS exposes it.
+  double _statusHeight(BuildContext context) =>
+      widget.barTheme?.topInset ??
+      (FoldKitScope.statusOf(context) == HingeStatus.closed ? 170 : 120);
+
   AppBar? get _ownAppBar => switch (widget.appBar) {
     final AppBar bar => bar,
     _ => null,
   };
+
+  List<FoldDestination> get _tabs {
+    if (widget.destinations.isNotEmpty) return widget.destinations;
+    return switch (widget.bottomNavigationBar) {
+      final NavigationBar bar => [
+        for (final d in bar.destinations)
+          if (d case final NavigationDestination n)
+            FoldDestination(
+              icon: n.icon,
+              selectedIcon: n.selectedIcon,
+              label: n.label,
+            ),
+      ],
+      final BottomNavigationBar bar => [
+        for (final item in bar.items) FoldDestination.fromItem(item),
+      ],
+      final CupertinoTabBar bar => [
+        for (final item in bar.items) FoldDestination.fromItem(item),
+      ],
+      _ => const [],
+    };
+  }
+
+  int get _selectedIndex => widget.destinations.isNotEmpty
+      ? widget.selectedIndex
+      : switch (widget.bottomNavigationBar) {
+          final NavigationBar bar => bar.selectedIndex,
+          final BottomNavigationBar bar => bar.currentIndex,
+          final CupertinoTabBar bar => bar.currentIndex,
+          _ => widget.selectedIndex,
+        };
+
+  ValueChanged<int>? get _onSelected =>
+      widget.onDestinationSelected ??
+      switch (widget.bottomNavigationBar) {
+        final NavigationBar bar => bar.onDestinationSelected,
+        final BottomNavigationBar bar => bar.onTap,
+        final CupertinoTabBar bar => bar.onTap,
+        _ => null,
+      };
 
   List<FoldAction> get _orderedActions => [
     ...widget.actions.where((a) => a.prominent),
@@ -469,6 +730,7 @@ class _BarButton extends StatelessWidget {
   final bool selected;
   final bool prominent;
   final FoldBarTheme? theme;
+  final bool showsLabel;
 
   const _BarButton({
     required this.icon,
@@ -477,6 +739,7 @@ class _BarButton extends StatelessWidget {
     this.selected = false,
     this.prominent = false,
     this.theme,
+    this.showsLabel = false,
   });
 
   @override
@@ -485,10 +748,18 @@ class _BarButton extends StatelessWidget {
     final color = selected || prominent
         ? theme?.selectedColor ?? scheme.primary
         : theme?.unselectedColor ?? scheme.onSurfaceVariant;
-    final labelStyle =
-        theme?.labelStyle ?? Theme.of(context).textTheme.labelSmall;
+    final indicator = selected
+        ? ShapeDecoration(
+            color: theme?.indicatorColor ?? scheme.secondaryContainer,
+            shape: const StadiumBorder(),
+          )
+        : null;
+    final iconWidget = IconTheme.merge(
+      data: IconThemeData(color: color),
+      child: icon,
+    );
     return SizedBox(
-      height: _FoldScaffoldState._itemExtent,
+      height: showsLabel ? 56 : _FoldScaffoldState._itemExtent,
       child: Semantics(
         button: true,
         selected: selected,
@@ -500,35 +771,88 @@ class _BarButton extends StatelessWidget {
           message: label,
           child: InkWell(
             onTap: onPressed,
-            borderRadius: BorderRadius.circular(16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 4,
+            customBorder: const StadiumBorder(),
+            child: showsLabel
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
+                        decoration: indicator,
+                        child: iconWidget,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.labelSmall?.copyWith(color: color),
+                      ),
+                    ],
+                  )
+                : Center(
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: indicator,
+                      child: Center(child: iconWidget),
+                    ),
                   ),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? theme?.indicatorColor ?? scheme.secondaryContainer
-                        : null,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: IconTheme.merge(
-                    data: IconThemeData(color: color),
-                    child: icon,
-                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Glass extends StatelessWidget {
+  final Widget child;
+  final FoldBarTheme? theme;
+
+  const _Glass({required this.child, this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final tint =
+        theme?.backgroundColor ?? Theme.of(context).colorScheme.surface;
+    return DecoratedBox(
+      decoration: const ShapeDecoration(
+        shape: StadiumBorder(),
+        shadows: [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 24,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipPath(
+        clipper: const ShapeBorderClipper(shape: StadiumBorder()),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: DecoratedBox(
+            decoration: ShapeDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  tint.withValues(alpha: dark ? 0.45 : 0.7),
+                  tint.withValues(alpha: dark ? 0.25 : 0.45),
+                ],
+              ),
+              shape: StadiumBorder(
+                side: BorderSide(
+                  color: Colors.white.withValues(alpha: dark ? 0.18 : 0.8),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: labelStyle?.copyWith(color: color),
-                ),
-              ],
+              ),
             ),
+            child: child,
           ),
         ),
       ),

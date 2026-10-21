@@ -34,8 +34,15 @@ class FoldState {
   /// The catalog entry for [model], or `null` for unknown devices.
   FoldDevice? get device => FoldDevices.byModel(model);
 
-  /// How the device is folded.
-  FoldPosture get posture => info.posture;
+  /// How the device is folded. Android reports no fold on the outer display,
+  /// so a hinge angle under 15° also counts as [FoldPosture.closed] there.
+  FoldPosture get posture {
+    final angle = this.angle;
+    if (info.posture == FoldPosture.none && angle != null && angle < 15) {
+      return FoldPosture.closed;
+    }
+    return info.posture;
+  }
 
   /// Folded shut (iPhone Duo outer display).
   bool get isClosed => posture == FoldPosture.closed;
@@ -93,6 +100,11 @@ abstract final class FoldKit {
   /// (analytics, controllers). Needs a [FoldKitScope] at the top of the app.
   static Stream<FoldState> get changes => _changes.stream;
 
+  /// Every change of the hinge angle in degrees (`null` when the sensor stops
+  /// reporting), for code outside widgets. Needs a [FoldKitScope].
+  static Stream<double?> get angles =>
+      changes.map((state) => state.angle).distinct();
+
   /// The latest state published on [changes], or `null` before the first one.
   static FoldState? get current => _current;
 
@@ -122,10 +134,21 @@ class FoldBuilder extends StatelessWidget {
 }
 
 /// Calls [onChanged] when the posture, the hinge angle, the device or the
-/// fold changes (not on the first build unless [fireImmediately]).
+/// fold changes, and [onAngleChanged] when only the hinge angle matters
+/// (not on the first build unless [fireImmediately]).
+///
+/// ```dart
+/// FoldListener(
+///   onAngleChanged: (angle) => setState(() => hinge = angle), // degrees, 180 = flat
+///   child: page,
+/// )
+/// ```
 class FoldListener extends StatefulWidget {
   /// Called with the new state.
-  final ValueChanged<FoldState> onChanged;
+  final ValueChanged<FoldState>? onChanged;
+
+  /// Called with the new hinge angle in degrees (`null` without a sensor).
+  final ValueChanged<double?>? onAngleChanged;
 
   /// Also call [onChanged] once with the first state.
   final bool fireImmediately;
@@ -136,10 +159,14 @@ class FoldListener extends StatefulWidget {
   /// Creates the listener.
   const FoldListener({
     super.key,
-    required this.onChanged,
+    this.onChanged,
+    this.onAngleChanged,
     required this.child,
     this.fireImmediately = false,
-  });
+  }) : assert(
+         onChanged != null || onAngleChanged != null,
+         'Pass onChanged or onAngleChanged.',
+       );
 
   @override
   State<FoldListener> createState() => _FoldListenerState();
@@ -156,8 +183,11 @@ class _FoldListenerState extends State<FoldListener> {
     _last = state;
     if (state == previous) return;
     if (previous == null && !widget.fireImmediately) return;
+    final angleChanged = previous == null || previous.angle != state.angle;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) widget.onChanged(state);
+      if (!mounted) return;
+      widget.onChanged?.call(state);
+      if (angleChanged) widget.onAngleChanged?.call(state.angle);
     });
   }
 

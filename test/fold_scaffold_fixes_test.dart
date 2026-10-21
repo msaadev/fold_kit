@@ -95,4 +95,54 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Menu'), findsOneWidget);
   });
+
+  testWidgets('glass: floating glass tab bar on phones, glass capsules', (
+    tester,
+  ) async {
+    final taps = <int>[];
+    Widget app(FoldBarPlacement placement) => _app(
+      FoldScaffold(
+        placement: placement,
+        body: const SizedBox(),
+        destinations: _tabs,
+        onDestinationSelected: taps.add,
+        barTheme: const FoldBarTheme(glass: true),
+      ),
+    );
+    await tester.pumpWidget(app(FoldBarPlacement.bottom));
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byType(BackdropFilter), findsOneWidget);
+    expect(find.text('List'), findsOneWidget);
+    await tester.tap(find.text('List'));
+    expect(taps, [1]);
+
+    await tester.pumpWidget(app(FoldBarPlacement.trailing));
+    expect(find.byType(BackdropFilter), findsOneWidget);
+    expect(find.byTooltip('List'), findsOneWidget);
+  });
+
+  testWidgets('right-to-left: Duo bar stays in the right status strip', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Directionality(
+          textDirection: TextDirection.rtl,
+          child: FoldPreview(
+            posture: FoldPosture.closed,
+            child: const FoldScaffold(
+              destinations: _tabs,
+              body: SizedBox.expand(key: Key('body')),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    final body = tester.getRect(find.byKey(const Key('body')));
+    expect(
+      tester.getCenter(find.byTooltip('Home')).dx,
+      greaterThan(body.right),
+    );
+  });
 }

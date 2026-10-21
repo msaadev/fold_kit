@@ -1,3 +1,33 @@
+## 1.1.0
+
+* **`FoldScaffold` reads your native bars**: pass a `NavigationBar`, `BottomNavigationBar` or
+  `CupertinoTabBar` as `bottomNavigationBar` and its tabs, selection and tap callback go into the
+  vertical bar on iPhone Duo — no `destinations` needed. Renaming `Scaffold` is the whole migration.
+* **Vertical bar looks native on iPhone Duo**: it sits in the status strip on the right, below the
+  clock (no extra band, the page keeps its width), with icon-only buttons in capsules: back, actions,
+  tabs. `FoldBarTheme.backgroundColor` now colors the capsules; `labelStyle` is deprecated.
+* **Glass look**: `FoldBarTheme(glass: true)` makes the capsules blurred, see-through glass, and on
+  phones turns the tabs built from `destinations` into a floating glass tab bar.
+* **Drop-in for big apps**: `FoldScaffold` also takes `bottomSheet`, `floatingActionButtonLocation`,
+  `persistentFooterButtons`, `extendBody` and `extendBodyBehindAppBar`, so renaming `Scaffold` compiles.
+* Right-to-left languages: the iPhone Duo bar stays in the status strip on the right.
+* `FoldDevice.innerPadding`: `FoldPreview` shows the iPhone Duo status strip on the open display too.
+* **`FoldTwoPane` options**: `splitWhen` (e.g. split only while half open), `splitWithoutFold`
+  (tablets stay one page) and `hinge` (a widget in the fold gap).
+* **`FoldLayoutBuilder`**: the fold mapped into any widget (`LocalFold.start` / `end` / `rect`), for
+  layouts like "keep the canvas above a tabletop fold".
+* **`FoldAngleController`**: live hinge angle for protractor-style features, with `hold()` that
+  takes the value from just before the tap.
+* `FoldBarTheme.topInset` overrides where the iPhone Duo bar starts below the clock.
+* Android: a hinge angle under 15° counts as `closed` (outer display); bars stay at the bottom there.
+* Catalog: Pixel 9 Pro Fold (measured on the emulator).
+* **Vertical bar is your choice**: `FoldBarPlacement.auto` now also goes vertical on any window 840+
+  wide (open Android foldables, tablets in portrait); `verticalWhen` sets your own rule,
+  `verticalBarBuilder` draws the whole bar from `FoldBarContent`, `FoldBarTheme.width` sizes it.
+* Package rule: every public member is documented (`public_member_api_docs` on).
+* **Hinge angle listener**: `FoldListener(onAngleChanged: …)` and `FoldKit.angles` stream.
+  `FoldListener.onChanged` is now optional.
+
 ## 1.0.0
 
 First stable release: one foldable and large-screen API for every device.

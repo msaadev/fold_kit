@@ -1,7 +1,8 @@
 import 'package:flutter/widgets.dart';
 
 import 'fold_info.dart';
-import 'fold_tracker.dart';
+import 'fold_layout_builder.dart';
+import 'fold_state.dart';
 
 /// Two panes that split exactly at the fold, on any device.
 ///
@@ -9,6 +10,19 @@ import 'fold_tracker.dart';
 /// - Horizontal fold (tabletop): [start] above, [end] below.
 /// - No fold, wide window: split by [ratio] with a [divider].
 /// - Narrow window: only [compact] (defaults to [start]).
+///
+/// Split only when the device is partly open, like a book (the rest of the
+/// time the page stays one piece):
+///
+/// ```dart
+/// FoldTwoPane(
+///   splitWhen: (fold) => fold.isHalfOpen,
+///   splitWithoutFold: false,
+///   compact: const NormalPage(),   // shown when not split
+///   start: const Inputs(),
+///   end: const Results(),
+/// )
+/// ```
 ///
 /// Both panes keep their state when the layout changes.
 class FoldTwoPane extends StatefulWidget {
@@ -30,6 +44,17 @@ class FoldTwoPane extends StatefulWidget {
   /// Drawn between the panes when there is no fold. Defaults to a hairline.
   final Widget? divider;
 
+  /// Fills the space of the fold itself (a hinge you can see, a shadow).
+  /// Empty by default.
+  final Widget? hinge;
+
+  /// Whether to split at the fold for this state. Defaults to any fold in
+  /// view; `(fold) => fold.isHalfOpen` splits only while partly open.
+  final bool Function(FoldState fold)? splitWhen;
+
+  /// Whether wide windows without a fold (tablets) also split by [ratio].
+  final bool splitWithoutFold;
+
   /// Creates two panes.
   const FoldTwoPane({
     super.key,
@@ -39,6 +64,9 @@ class FoldTwoPane extends StatefulWidget {
     this.ratio = 0.5,
     this.minSplitWidth = 600,
     this.divider,
+    this.hinge,
+    this.splitWhen,
+    this.splitWithoutFold = true,
   });
 
   @override
@@ -51,37 +79,38 @@ class _FoldTwoPaneState extends State<FoldTwoPane> {
 
   @override
   Widget build(BuildContext context) {
-    final fold = FoldInfo.of(context);
-    return FoldTracker(
-      builder: (context, origin, size) {
+    final split = widget.splitWhen?.call(FoldKit.of(context)) ?? true;
+    return FoldLayoutBuilder(
+      builder: (context, fold) {
         final start = KeyedSubtree(key: _startKey, child: widget.start);
         final end = KeyedSubtree(key: _endKey, child: widget.end);
-        final local = fold.rect?.shift(-origin);
-        final hit = local != null && local.overlaps(Offset.zero & size);
-        if (hit && fold.axis == FoldAxis.vertical) {
+        final rect = fold.rect;
+        final hinge = widget.hinge ?? const SizedBox.shrink();
+        if (split && rect != null && fold.axis == FoldAxis.vertical) {
           return Row(
             children: [
-              SizedBox(width: local.left.clamp(0, size.width), child: start),
-              SizedBox(width: local.width),
+              SizedBox(width: fold.start.width, child: start),
+              SizedBox(width: rect.width, child: hinge),
               Expanded(child: end),
             ],
           );
         }
-        if (hit && fold.axis == FoldAxis.horizontal) {
+        if (split && rect != null && fold.axis == FoldAxis.horizontal) {
           return Column(
             children: [
-              SizedBox(height: local.top.clamp(0, size.height), child: start),
-              SizedBox(height: local.height),
+              SizedBox(height: fold.start.height, child: start),
+              SizedBox(height: rect.height, child: hinge),
               Expanded(child: end),
             ],
           );
         }
-        if (size.width < widget.minSplitWidth) {
+        if (!widget.splitWithoutFold ||
+            fold.size.width < widget.minSplitWidth) {
           return widget.compact ?? start;
         }
         return Row(
           children: [
-            SizedBox(width: size.width * widget.ratio, child: start),
+            SizedBox(width: fold.size.width * widget.ratio, child: start),
             widget.divider ?? const _Hairline(),
             Expanded(child: end),
           ],
