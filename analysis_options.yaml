@@ -1,5 +1,10 @@
 include: package:flutter_lints/flutter.yaml
 
+linter:
+  rules:
+    # Package rule: every public member says what it is for.
+    public_member_api_docs: true
+
 analyzer:
   exclude:
     - build/**

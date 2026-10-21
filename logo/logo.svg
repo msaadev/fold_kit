@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="fold_kit logo"><defs><linearGradient id="g" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#D946EF"/><stop offset="1" stop-color="#8B5CF6"/></linearGradient></defs><rect width="512" height="512" rx="116" fill="url(#g)"/>
+<rect x="104" y="128" width="136" height="256" rx="30" fill="#fff"/>
+<path d="M276 140 L392 104 Q408 99 408 116 L408 396 Q408 413 392 408 L276 372 Q262 368 262 354 L262 158 Q262 144 276 140 Z" fill="#fff" fill-opacity=".62"/>
+<line x1="251" y1="150" x2="251" y2="362" stroke="#fff" stroke-opacity=".9" stroke-width="6" stroke-dasharray="14 12" stroke-linecap="round"/>
+</svg>
