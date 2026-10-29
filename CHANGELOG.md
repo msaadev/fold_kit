@@ -1,3 +1,8 @@
+## 1.1.1
+
+* Package description and topics now name iPhone Duo, foldables, dual screens and the hinge, so
+  pub.dev search finds fold_kit for those words. No code changes.
+
 ## 1.1.0
 
 * **`FoldScaffold` reads your native bars**: pass a `NavigationBar`, `BottomNavigationBar` or
